@@ -1,0 +1,893 @@
+#fourk-root,
+#fourk-root * {
+  box-sizing: border-box;
+}
+
+#fourk-root {
+  --fourk-bg: #ffffff;
+  --fourk-bg-sunken: #f1f5f9;
+  --fourk-bg-sunken-strong: #e2e8f0;
+  --fourk-border: #e2e8f0;
+  --fourk-border-strong: #cbd5e1;
+  --fourk-muted: #64748b;
+  --fourk-muted-2: #94a3b8;
+  --fourk-text: #0f172a;
+  --fourk-primary: #1e293b;
+  --fourk-primary-strong: #0f172a;
+  --fourk-accent: #3b82f6;
+  --fourk-accent-strong: #2563eb;
+  --fourk-accent-wash: #eff6ff;
+  --fourk-success: #10b981;
+  --fourk-success-wash: #ecfdf5;
+  --fourk-danger: #ef4444;
+  --fourk-danger-wash: #fef2f2;
+  --fourk-radius-outer: 18px;
+  --fourk-radius-inner: 10px;
+  position: fixed;
+  z-index: 2147483647;
+  top: 0;
+  right: 16px;
+  width: 380px;
+  max-height: calc(100vh - 16px);
+  color: var(--fourk-text);
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  text-align: left;
+  color-scheme: light;
+}
+
+#fourk-root[hidden],
+#fourk-root [hidden] {
+  display: none !important;
+}
+
+#fourk-root button,
+#fourk-root input,
+#fourk-root select {
+  font: inherit;
+}
+
+#fourk-root button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+#fourk-root .fourk-card {
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--fourk-border-strong);
+  border-radius: var(--fourk-radius-outer);
+  background: var(--fourk-bg);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.1);
+  transform-origin: top right;
+  transition: transform 200ms cubic-bezier(0.34, 1.4, 0.64, 1), opacity 160ms ease;
+}
+
+#fourk-root.is-collapsing .fourk-card {
+  transform: scale(0.92) translateY(-8px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* =========================================
+   Header
+   ========================================= */
+
+#fourk-root .fourk-header {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 14px;
+  border-bottom: 1px solid var(--fourk-border);
+  background: var(--fourk-primary);
+  color: #ffffff;
+  user-select: none;
+}
+
+#fourk-root .fourk-brand {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+#fourk-root .fourk-brand-name {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+#fourk-root .fourk-brand-tag {
+  margin-top: 1px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+}
+
+#fourk-root .fourk-close-btn {
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  color: #ffffff;
+  background: transparent;
+  font-size: 11.5px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+#fourk-root .fourk-close-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* =========================================
+   Layout / scroll region
+
+   Header, video summary and tabs stay fixed.
+   Only the active tab's content area scrolls.
+   ========================================= */
+
+#fourk-root .fourk-video-summary {
+  flex: 0 0 auto;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--fourk-border);
+  background: var(--fourk-bg-sunken);
+}
+
+#fourk-root .fourk-view-area {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#fourk-root .fourk-view-area > [data-view] {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#fourk-root .fourk-video-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--fourk-danger);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+#fourk-root .fourk-video-indicator i {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+#fourk-root .fourk-video-title {
+  overflow: hidden;
+  margin: 7px 0 4px;
+  color: var(--fourk-text);
+  font-size: 13.5px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#fourk-root .fourk-video-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--fourk-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+#fourk-root .fourk-dot {
+  opacity: 0.5;
+}
+
+#fourk-root .fourk-thumbnail-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+#fourk-root .fourk-text-btn {
+  flex: 1;
+  padding: 7px 8px;
+  border: 1px solid var(--fourk-border-strong);
+  border-radius: 999px;
+  color: var(--fourk-accent-strong);
+  background: var(--fourk-bg);
+  font-size: 10.5px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+#fourk-root .fourk-text-btn:hover {
+  border-color: var(--fourk-accent);
+  background: var(--fourk-accent-wash);
+}
+
+#fourk-root .fourk-text-btn:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+/* =========================================
+   Form / tabs
+   ========================================= */
+
+#fourk-root .fourk-form {
+  overflow: hidden;
+}
+
+#fourk-root .fourk-recording,
+#fourk-root .fourk-result {
+  padding: 16px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--fourk-border-strong) transparent;
+}
+
+#fourk-root .fourk-recording {
+  padding-top: 24px;
+  padding-bottom: 16px;
+}
+
+#fourk-root .fourk-tabs {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 4px;
+  padding: 16px 16px 0;
+  border-bottom: 1px solid var(--fourk-border);
+}
+
+#fourk-root .fourk-panels {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--fourk-border-strong) transparent;
+}
+
+#fourk-root .fourk-tab {
+  flex: 1;
+  padding: 10px 4px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--fourk-muted);
+  font-size: 12.5px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: color 140ms ease, border-color 140ms ease;
+}
+
+#fourk-root .fourk-tab:hover {
+  color: var(--fourk-text);
+}
+
+#fourk-root .fourk-tab.is-active {
+  color: var(--fourk-accent-strong);
+  border-bottom-color: var(--fourk-accent);
+}
+
+#fourk-root .fourk-section-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  color: var(--fourk-text);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+#fourk-root .fourk-section-label span:last-child {
+  color: var(--fourk-accent-strong);
+  font-weight: 650;
+}
+
+/* =========================================
+   Time inputs
+   ========================================= */
+
+#fourk-root .fourk-time-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+#fourk-root .fourk-time-field {
+  min-width: 0;
+}
+
+#fourk-root .fourk-time-field > span {
+  display: block;
+  margin: 0 0 6px 2px;
+  color: var(--fourk-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+#fourk-root .fourk-input-wrap {
+  display: flex;
+  align-items: stretch;
+  height: 46px;
+  border: 1px solid var(--fourk-border-strong);
+  border-radius: var(--fourk-radius-inner);
+  background: var(--fourk-bg-sunken);
+  overflow: hidden;
+  transition: 140ms ease;
+}
+
+#fourk-root .fourk-input-wrap:focus-within {
+  border-color: var(--fourk-accent);
+  background: var(--fourk-bg);
+  box-shadow: 0 0 0 3px var(--fourk-accent-wash);
+}
+
+#fourk-root .fourk-input-wrap input {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  color: var(--fourk-text);
+  background: transparent;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+#fourk-root .fourk-text-link {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 2px 0;
+  border: 0;
+  color: var(--fourk-accent-strong);
+  background: transparent;
+  font-size: 10px;
+  font-weight: 650;
+  cursor: pointer;
+  text-align: left;
+  transition: opacity 140ms ease;
+}
+
+#fourk-root .fourk-text-link:hover {
+  opacity: 0.7;
+}
+
+#fourk-root .fourk-hint-text {
+  margin: 8px 2px 16px;
+  color: var(--fourk-muted);
+  font-size: 10.5px;
+  line-height: 1.55;
+}
+
+#fourk-root .fourk-frame-time .fourk-input-wrap {
+  height: 51px;
+}
+
+#fourk-root .fourk-frame-time .fourk-input-wrap input {
+  font-size: 18px;
+}
+
+/* =========================================
+   Timeline
+   ========================================= */
+
+#fourk-root .fourk-timeline {
+  margin: 4px 2px 16px;
+}
+
+#fourk-root .fourk-timeline-track {
+  position: relative;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--fourk-bg-sunken-strong);
+}
+
+#fourk-root .fourk-timeline-selection {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  min-width: 2px;
+  border-radius: inherit;
+  background: var(--fourk-accent);
+}
+
+#fourk-root .fourk-handle {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border: 3px solid white;
+  border-radius: 50%;
+  background: var(--fourk-accent);
+  outline: 1px solid var(--fourk-border-strong);
+  transform: translate(-50%, -50%);
+}
+
+#fourk-root .fourk-timeline-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  color: var(--fourk-muted-2);
+  font-size: 9.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* =========================================
+   Quick duration / segmented controls
+   ========================================= */
+
+#fourk-root .fourk-quick-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  color: var(--fourk-muted);
+  font-size: 10.5px;
+}
+
+#fourk-root .fourk-quick-row > div {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--fourk-bg-sunken);
+}
+
+#fourk-root .fourk-quick-row button {
+  min-width: 38px;
+  padding: 6px 9px;
+  border: 0;
+  border-radius: 999px;
+  color: var(--fourk-muted);
+  background: transparent;
+  font-size: 10.5px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+#fourk-root .fourk-quick-row button:hover {
+  color: var(--fourk-text);
+}
+
+#fourk-root .fourk-quick-row button.is-active {
+  color: var(--fourk-text);
+  background: var(--fourk-bg);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+}
+
+/* =========================================
+   Messages
+   ========================================= */
+
+#fourk-root .fourk-message {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--fourk-danger-wash);
+  border-radius: var(--fourk-radius-inner);
+  color: var(--fourk-danger);
+  background: var(--fourk-danger-wash);
+  font-size: 11px;
+}
+
+#fourk-root .fourk-message[data-type="success"] {
+  border-color: var(--fourk-success-wash);
+  color: var(--fourk-success);
+  background: var(--fourk-success-wash);
+}
+
+/* =========================================
+   Buttons
+   ========================================= */
+
+#fourk-root .fourk-primary,
+#fourk-root .fourk-secondary {
+  display: flex;
+  width: 100%;
+  height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 120ms ease, filter 120ms ease, background 120ms ease, border-color 120ms ease;
+}
+
+#fourk-root .fourk-primary {
+  border: 0;
+  color: white;
+  background: var(--fourk-accent);
+}
+
+#fourk-root .fourk-primary:hover {
+  background: var(--fourk-accent-strong);
+}
+
+#fourk-root .fourk-primary:active,
+#fourk-root .fourk-secondary:active {
+  transform: scale(0.98);
+}
+
+#fourk-root .fourk-primary:disabled {
+  cursor: wait;
+  filter: saturate(0.7);
+  opacity: 0.75;
+  transform: none;
+}
+
+#fourk-root .fourk-secondary:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+#fourk-root .fourk-button-spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: fourk-spin 0.8s linear infinite;
+}
+
+#fourk-root .fourk-secondary {
+  margin-top: 8px;
+  border: 1px solid var(--fourk-border-strong);
+  color: var(--fourk-text);
+  background: var(--fourk-bg);
+}
+
+#fourk-root .fourk-secondary:hover {
+  border-color: var(--fourk-muted-2);
+  background: var(--fourk-bg-sunken);
+}
+
+#fourk-root .fourk-secondary.fourk-danger {
+  color: var(--fourk-danger);
+  border-color: var(--fourk-danger-wash);
+  background: var(--fourk-danger-wash);
+}
+
+#fourk-root .fourk-secondary.fourk-danger:hover {
+  border-color: var(--fourk-danger);
+  background: #fee2e2;
+}
+
+#fourk-root .fourk-privacy {
+  margin: 10px 0 0;
+  color: var(--fourk-muted-2);
+  font-size: 10px;
+  text-align: center;
+}
+
+/* =========================================
+   Recording view
+   ========================================= */
+
+#fourk-root .fourk-recording-visual {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+#fourk-root .fourk-recording-ring {
+  display: grid;
+  width: 60px;
+  height: 60px;
+  flex: 0 0 60px;
+  place-items: center;
+  border: 4px solid var(--fourk-accent-wash);
+  border-top-color: var(--fourk-accent);
+  border-radius: 50%;
+  animation: fourk-spin 1.5s linear infinite;
+}
+
+#fourk-root .fourk-recording-ring span {
+  color: var(--fourk-accent-strong);
+  font-size: 11px;
+  font-weight: 700;
+  animation: fourk-counter-spin 1.5s linear infinite;
+}
+
+#fourk-root .fourk-recording-visual strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--fourk-text);
+  font-size: 13.5px;
+}
+
+#fourk-root .fourk-recording-visual p {
+  margin: 0;
+  color: var(--fourk-muted);
+  font-size: 10.5px;
+}
+
+#fourk-root .fourk-progress {
+  overflow: hidden;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--fourk-bg-sunken-strong);
+}
+
+#fourk-root .fourk-progress i {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--fourk-accent);
+  transition: width 100ms linear;
+}
+
+#fourk-root .fourk-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  margin: 8px 1px 16px;
+  color: var(--fourk-muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* =========================================
+   Result view
+   ========================================= */
+
+#fourk-root .fourk-success-badge {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: var(--fourk-radius-inner);
+  color: white;
+  background: var(--fourk-success);
+}
+
+#fourk-root .fourk-success-badge strong {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+#fourk-root .fourk-success-badge small {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 10.5px;
+}
+
+#fourk-root .fourk-preview-wrap {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  margin-bottom: 12px;
+  border: 1px solid var(--fourk-border);
+  border-radius: var(--fourk-radius-inner);
+  background: #10141a;
+}
+
+#fourk-root .fourk-preview-wrap video,
+#fourk-root .fourk-preview-wrap img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+#fourk-root .fourk-preview-wrap audio {
+  position: absolute;
+  top: 50%;
+  left: 18px;
+  width: calc(100% - 36px);
+  transform: translateY(-50%);
+}
+
+#fourk-root .fourk-preview-label {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 4px 7px;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(16, 20, 26, 0.55);
+  backdrop-filter: blur(6px);
+  font-size: 8px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+#fourk-root .fourk-file-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--fourk-border);
+  border-radius: var(--fourk-radius-inner);
+  background: var(--fourk-bg-sunken);
+}
+
+#fourk-root .fourk-file-info strong {
+  overflow: hidden;
+  color: var(--fourk-text);
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#fourk-root .fourk-file-info small {
+  color: var(--fourk-muted);
+  font-size: 9.5px;
+}
+
+/* =========================================
+   Subtitles
+   ========================================= */
+
+#fourk-root .fourk-sub-panel {
+  padding-top: 1px;
+}
+
+#fourk-root .fourk-sub-field {
+  display: block;
+  margin-bottom: 12px;
+}
+
+#fourk-root .fourk-select-wrap {
+  display: flex;
+  align-items: center;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--fourk-border-strong);
+  border-radius: var(--fourk-radius-inner);
+  background: var(--fourk-bg-sunken);
+  transition: 140ms ease;
+}
+
+#fourk-root .fourk-select-wrap:focus-within {
+  border-color: var(--fourk-accent);
+  background: var(--fourk-bg);
+  box-shadow: 0 0 0 3px var(--fourk-accent-wash);
+}
+
+#fourk-root .fourk-select-wrap select {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  color: var(--fourk-text);
+  background: transparent;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+#fourk-root .fourk-select-wrap select option {
+  color: var(--fourk-text);
+  background: var(--fourk-bg);
+}
+
+#fourk-root .fourk-select-wrap select:disabled {
+  color: var(--fourk-muted-2);
+  cursor: not-allowed;
+}
+
+#fourk-root .fourk-sub-formats {
+  margin-bottom: 12px;
+}
+
+#fourk-root .fourk-sub-formats button {
+  min-width: 40px;
+  padding: 6px 9px;
+}
+
+#fourk-root .fourk-sub-preview {
+  margin: 12px 0 0;
+  padding: 8px;
+  border: 1px solid var(--fourk-border);
+  border-radius: var(--fourk-radius-inner);
+  background: var(--fourk-bg);
+}
+
+#fourk-root .fourk-sub-row {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+  gap: 9px;
+  padding: 8px 9px;
+  border: 0;
+  border-radius: 8px;
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+#fourk-root .fourk-sub-row:hover {
+  background: var(--fourk-bg-sunken);
+}
+
+#fourk-root .fourk-sub-time {
+  flex: 0 0 auto;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: var(--fourk-accent-strong);
+  background: var(--fourk-accent-wash);
+  font-size: 9.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+#fourk-root .fourk-sub-text {
+  min-width: 0;
+  color: var(--fourk-text);
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+#fourk-root .fourk-sub-actions {
+  margin-top: 10px;
+}
+
+/* =========================================
+   Animations
+   ========================================= */
+
+@keyframes fourk-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fourk-counter-spin {
+  to { transform: rotate(-360deg); }
+}
+
+/* =========================================
+   Responsive
+   ========================================= */
+
+@media (min-height: 760px) and (min-width: 900px) {
+  #fourk-root {
+    width: 400px;
+  }
+}
+
+@media (max-width: 680px) {
+  #fourk-root {
+    top: 70px;
+    right: 8px;
+    bottom: 8px;
+    left: 8px;
+    width: auto;
+    max-height: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #fourk-root *,
+  #fourk-root *::before,
+  #fourk-root *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
