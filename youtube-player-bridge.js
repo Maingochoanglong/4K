@@ -194,32 +194,6 @@
     return { ok: true, log, entries: snapshot(), reason: "" };
   }
 
-  function listQualities() {
-    const player = getPlayer();
-    try {
-      return player && typeof player.getAvailableQualityLevels === "function"
-        ? player.getAvailableQualityLevels()
-        : [];
-    } catch (_) {
-      return [];
-    }
-  }
-
-  function setQuality(level) {
-    const player = getPlayer();
-    try {
-      if (player && typeof player.setPlaybackQualityRange === "function") {
-        player.setPlaybackQualityRange(level, level);
-      }
-      if (player && typeof player.setPlaybackQuality === "function") {
-        player.setPlaybackQuality(level);
-      }
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
-
   window.addEventListener("message", (event) => {
     if (event.source !== window) return;
     const data = event.data;
@@ -231,14 +205,6 @@
     }
     if (data.command === "entries") {
       post({ type: "captured", id: data.id, entries: snapshot() });
-      return;
-    }
-    if (data.command === "quality-list") {
-      post({ type: "quality-list", id: data.id, levels: listQualities() });
-      return;
-    }
-    if (data.command === "quality-set") {
-      post({ type: "quality-set", id: data.id, ok: setQuality(data.level) });
       return;
     }
     if (data.command === "harvest") {

@@ -52,20 +52,7 @@
     subNoTracks: false,
     subLoading: false,
     subFormat: "txt",
-    subTimeStyle: "clock",
-    qualityLoaded: false
-  };
-
-  const QUALITY_LABELS = {
-    hd2160: "2160p (4K)",
-    hd1440: "1440p (2K)",
-    hd1080: "1080p",
-    hd720: "720p",
-    large: "480p",
-    medium: "360p",
-    small: "240p",
-    tiny: "144p",
-    auto: "Auto"
+    subTimeStyle: "clock"
   };
 
   function isWatchPage() {
@@ -118,8 +105,15 @@
               <span data-role="current-time">0:00</span><span class="fourk-dot">•</span><span data-role="video-duration">--:--</span>
             </div>
             <div class="fourk-thumbnail-actions">
-              <button type="button" class="fourk-text-btn" data-action="thumbnail">Download</button>
-              <button type="button" class="fourk-text-btn" data-action="copy-thumbnail">Copy</button>
+              <button type="button" class="fourk-split-btn" data-action="get-thumbnail">
+                <span class="fourk-split-icon" aria-hidden="true">🖼️</span>
+                <span>Get Thumbnail</span>
+              </button>
+              <span class="fourk-split-divider" aria-hidden="true"></span>
+              <button type="button" class="fourk-split-btn" data-action="get-title">
+                <span class="fourk-split-icon" aria-hidden="true">📋</span>
+                <span>Get Title</span>
+              </button>
             </div>
           </div>
 
@@ -159,11 +153,6 @@
                     <div class="fourk-timeline-track"><div class="fourk-timeline-selection"></div><i class="fourk-handle fourk-handle-start"></i><i class="fourk-handle fourk-handle-end"></i></div>
                     <div class="fourk-timeline-labels"><span>0:00</span><span data-role="timeline-end">--:--</span></div>
                   </div>
-
-                  <label class="fourk-time-field fourk-sub-field" data-role="quality-field">
-                    <span>Resolution</span>
-                    <div class="fourk-select-wrap"><select data-select="quality" aria-label="Choose resolution"><option value="">Original</option></select></div>
-                  </label>
 
                   <div class="fourk-quick-row">
                     <span>Quick clip</span>
@@ -296,6 +285,12 @@
     showMessage("");
   }
 
+  function getRawVideoTitle() {
+    return document.querySelector("h1.ytd-watch-metadata yt-formatted-string")?.textContent?.trim()
+      || document.title.replace(/\s*-\s*YouTube\s*$/, "")
+      || "";
+  }
+
   function refreshVideoInfo(resetSelection = false) {
     const latestVideo = findVideo();
     if (latestVideo) {
@@ -305,9 +300,7 @@
     if (!state.video) return;
 
     const duration = Number.isFinite(state.video.duration) ? state.video.duration : 0;
-    const title = document.querySelector("h1.ytd-watch-metadata yt-formatted-string")?.textContent?.trim()
-      || document.title.replace(/\s*-\s*YouTube\s*$/, "")
-      || "Video YouTube";
+    const title = getRawVideoTitle() || "Video YouTube";
 
     query(".fourk-video-title").textContent = title;
     query('[data-role="video-duration"]').textContent = duration ? formatTime(duration) : "--:--";
@@ -421,10 +414,8 @@
       const createLabel = mode === "audio" ? "Create audio clip" : "Create video clip";
       query('[data-role="create-label"]').textContent = createLabel;
     }
-    query('[data-role="quality-field"]').hidden = mode !== "video";
     clearMessage();
 
-    if (mode === "video") loadQualityOptions();
     if (mode === "sub" && !state.subCues.length && !state.subLoading && !state.subNoTracks) {
       loadSubtitles();
     }
@@ -432,29 +423,6 @@
 
   function sleep(ms) {
     return new Promise((resolve) => window.setTimeout(resolve, ms));
-  }
-
-  async function loadQualityOptions() {
-    if (state.qualityLoaded) return;
-    const select = query('[data-select="quality"]');
-    if (!select) return;
-    state.qualityLoaded = true;
-    const reply = await askBridge("quality-list", {}, 4000);
-    const levels = Array.isArray(reply?.levels) ? reply.levels : [];
-    levels.forEach((level) => {
-      if (level === "auto") return;
-      const option = document.createElement("option");
-      option.value = level;
-      option.textContent = QUALITY_LABELS[level] || level;
-      select.appendChild(option);
-    });
-  }
-
-  async function applySelectedQuality() {
-    const level = query('[data-select="quality"]')?.value;
-    if (!level) return;
-    await askBridge("quality-set", { level }, 4000);
-    await sleep(700);
   }
 
   function sendRuntimeMessage(message) {
@@ -648,7 +616,7 @@
 
   async function downloadThumbnail() {
     clearMessage();
-    const button = query('[data-action="thumbnail"]');
+    const button = query('[data-action="get-thumbnail"]');
     const originalContent = button.innerHTML;
     button.disabled = true;
     button.textContent = "Finding…";
@@ -668,20 +636,19 @@
     }
   }
 
-  async function copyThumbnail() {
+  async function copyVideoTitle() {
     clearMessage();
-    const button = query('[data-action="copy-thumbnail"]');
+    const button = query('[data-action="get-title"]');
     const originalContent = button.innerHTML;
     button.disabled = true;
     button.textContent = "Copying…";
     try {
-      const thumbnailUrl = await getCurrentThumbnailUrl();
-      const response = await sendRuntimeMessage({ type: "FOURK_FETCH_IMAGE", url: thumbnailUrl });
-      const blob = await fetch(response.dataUrl).then((result) => result.blob());
-      await copyImageBlob(blob);
-      showMessage("Thumbnail copied to clipboard.", "success");
+      const title = getRawVideoTitle();
+      if (!title) throw new Error("Couldn't find the video title.");
+      await navigator.clipboard.writeText(title);
+      showMessage("Video title copied to clipboard.", "success");
     } catch (error) {
-      showMessage(error?.message || "Couldn't copy the thumbnail.");
+      showMessage(error?.message || "Couldn't copy the video title.");
     } finally {
       button.disabled = false;
       button.innerHTML = originalContent;
@@ -1501,7 +1468,6 @@
 
       state.video.pause();
       state.video.playbackRate = 1;
-      await applySelectedQuality();
       await waitForSeek(state.video, selection.start);
       if (state.cancelling) {
         restoreAfterCancel();
@@ -1670,9 +1636,7 @@
   }
 
   function getSafeVideoTitle() {
-    const rawTitle = document.querySelector("h1.ytd-watch-metadata yt-formatted-string")?.textContent?.trim()
-      || document.title.replace(/\s*-\s*YouTube\s*$/, "")
-      || "youtube-video";
+    const rawTitle = getRawVideoTitle() || "youtube-video";
     return rawTitle
       .normalize("NFKD")
       .replace(/[\\/:*?"<>|]+/g, "")
@@ -1821,8 +1785,8 @@
       if (action === "set-frame") setTimeFromCurrent("frame");
       if (action === "create") createClip();
       if (action === "capture-frame") captureFrame();
-      if (action === "thumbnail") downloadThumbnail();
-      if (action === "copy-thumbnail") copyThumbnail();
+      if (action === "get-thumbnail") downloadThumbnail();
+      if (action === "get-title") copyVideoTitle();
       if (action === "cancel") stopRecording(true);
       if (action === "download") downloadClip();
       if (action === "copy-image") copyCapturedImage();

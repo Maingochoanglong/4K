@@ -196,31 +196,51 @@
 
 #fourk-root .fourk-thumbnail-actions {
   display: flex;
-  gap: 8px;
+  align-items: stretch;
   margin-top: 10px;
+  border: 1px solid var(--fourk-border-strong);
+  border-radius: var(--fourk-radius-inner);
+  overflow: hidden;
+  background: var(--fourk-bg);
 }
 
-#fourk-root .fourk-text-btn {
+#fourk-root .fourk-split-btn {
+  display: flex;
   flex: 1;
-  padding: 7px 8px;
-  border: 1px solid var(--fourk-border-strong);
-  border-radius: 999px;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 10px 6px;
+  border: 0;
   color: var(--fourk-accent-strong);
   background: var(--fourk-bg);
   font-size: 10.5px;
   font-weight: 650;
+  line-height: 1.2;
   cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease;
+  transition: background 120ms ease;
 }
 
-#fourk-root .fourk-text-btn:hover {
-  border-color: var(--fourk-accent);
+#fourk-root .fourk-split-btn:hover {
   background: var(--fourk-accent-wash);
 }
 
-#fourk-root .fourk-text-btn:disabled {
+#fourk-root .fourk-split-btn:disabled {
   cursor: wait;
   opacity: 0.6;
+}
+
+#fourk-root .fourk-split-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+#fourk-root .fourk-split-divider {
+  flex: 0 0 auto;
+  width: 1px;
+  background: var(--fourk-border-strong);
 }
 
 /* =========================================
