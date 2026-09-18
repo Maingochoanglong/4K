@@ -23,23 +23,6 @@ chrome.action.onClicked.addListener((tab) => {
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message?.type === "FOURK_CAPTURE_VISIBLE_TAB") {
-    if (typeof sender.tab?.windowId !== "number") {
-      sendResponse({ ok: false, error: "Couldn't determine the YouTube window." });
-      return false;
-    }
-
-    chrome.tabs.captureVisibleTab(sender.tab.windowId, { format: "png" }, (dataUrl) => {
-      const error = chrome.runtime.lastError;
-      if (error || !dataUrl) {
-        sendResponse({ ok: false, error: error?.message || "Couldn't capture the current tab." });
-        return;
-      }
-      sendResponse({ ok: true, dataUrl });
-    });
-    return true;
-  }
-
   if (message?.type === "FOURK_DOWNLOAD_THUMBNAIL") {
     const url = parseYouTubeImageUrl(message.url);
     if (!url) {

@@ -5,33 +5,43 @@
 
 #fourk-root {
   --fourk-bg: #ffffff;
-  --fourk-bg-sunken: #f1f5f9;
-  --fourk-bg-sunken-strong: #e2e8f0;
+  --fourk-bg-sunken: #f8fafc;
+  --fourk-bg-sunken-strong: #eef2f9;
   --fourk-border: #e2e8f0;
   --fourk-border-strong: #cbd5e1;
   --fourk-muted: #64748b;
   --fourk-muted-2: #94a3b8;
   --fourk-text: #0f172a;
-  --fourk-primary: #1e293b;
-  --fourk-primary-strong: #0f172a;
-  --fourk-accent: #3b82f6;
-  --fourk-accent-strong: #2563eb;
+  --fourk-accent: #2563eb;
+  --fourk-accent-strong: #1d4ed8;
   --fourk-accent-wash: #eff6ff;
-  --fourk-success: #10b981;
+  --fourk-accent-wash-strong: #dbeafe;
+  --fourk-success: #059669;
+  --fourk-success-strong: #047857;
   --fourk-success-wash: #ecfdf5;
-  --fourk-danger: #ef4444;
+  --fourk-success-wash-strong: #a7f3d0;
+  --fourk-danger: #dc2626;
+  --fourk-danger-strong: #b91c1c;
   --fourk-danger-wash: #fef2f2;
-  --fourk-radius-outer: 18px;
-  --fourk-radius-inner: 10px;
+  --fourk-radius-panel: 16px;
+  --fourk-radius-card: 12px;
+  --fourk-radius-control: 8px;
+  --fourk-radius-chip: 6px;
+  --fourk-radius-pill: 999px;
+  --fourk-space-xs: 4px;
+  --fourk-space-sm: 8px;
+  --fourk-space-md: 12px;
+  --fourk-space-lg: 16px;
+  --fourk-space-xl: 24px;
   position: fixed;
   z-index: 2147483647;
-  top: 0;
+  top: 16px;
   right: 16px;
-  width: 380px;
-  max-height: calc(100vh - 16px);
+  bottom: 16px;
+  width: 420px;
   color: var(--fourk-text);
   font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.45;
   text-align: left;
   color-scheme: light;
@@ -46,23 +56,35 @@
 #fourk-root input,
 #fourk-root select {
   font: inherit;
+  color: inherit;
 }
 
 #fourk-root button {
   -webkit-tap-highlight-color: transparent;
 }
 
+#fourk-root svg {
+  display: block;
+  flex: 0 0 auto;
+}
+
+/* =========================================
+   Card shell
+   ========================================= */
+
 #fourk-root .fourk-card {
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  height: fit-content;
   max-height: 100%;
   overflow: hidden;
   border: 1px solid var(--fourk-border-strong);
-  border-radius: var(--fourk-radius-outer);
+  border-radius: var(--fourk-radius-panel);
   background: var(--fourk-bg);
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.1);
+  box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.05);
   transform-origin: top right;
-  transition: transform 200ms cubic-bezier(0.34, 1.4, 0.64, 1), opacity 160ms ease;
+  transition: transform 160ms ease-out, opacity 140ms ease;
 }
 
 #fourk-root.is-collapsing .fourk-card {
@@ -81,217 +103,239 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 16px 16px 14px;
+  height: 56px;
+  padding: 0 var(--fourk-space-lg);
   border-bottom: 1px solid var(--fourk-border);
-  background: var(--fourk-primary);
-  color: #ffffff;
-  user-select: none;
+  background: var(--fourk-bg);
 }
 
 #fourk-root .fourk-brand {
   display: flex;
+  align-items: center;
+  gap: var(--fourk-space-sm);
   min-width: 0;
-  flex-direction: column;
+}
+
+#fourk-root .fourk-logo {
+  display: flex;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--fourk-radius-chip);
+  background: var(--fourk-accent);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.18);
+}
+
+#fourk-root .fourk-brand-copy {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
 }
 
 #fourk-root .fourk-brand-name {
-  font-size: 16px;
-  font-weight: 800;
+  font-size: 15px;
+  font-weight: 700;
   letter-spacing: -0.01em;
+  color: var(--fourk-text);
+  white-space: nowrap;
 }
 
-#fourk-root .fourk-brand-tag {
-  margin-top: 1px;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 11px;
+#fourk-root .fourk-version-badge {
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--fourk-muted);
+  background: var(--fourk-bg-sunken-strong);
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-#fourk-root .fourk-close-btn {
-  flex: 0 0 auto;
-  padding: 6px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 999px;
-  color: #ffffff;
+#fourk-root .fourk-icon-btn {
+  display: flex;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--fourk-radius-control);
+  color: var(--fourk-muted);
   background: transparent;
-  font-size: 11.5px;
-  font-weight: 650;
   cursor: pointer;
-  transition: background 140ms ease;
+  transition: background 140ms ease, color 140ms ease;
 }
 
-#fourk-root .fourk-close-btn:hover {
-  background: rgba(255, 255, 255, 0.14);
+#fourk-root .fourk-icon-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+#fourk-root .fourk-icon-btn:hover {
+  color: var(--fourk-text);
+  background: var(--fourk-bg-sunken);
 }
 
 /* =========================================
    Layout / scroll region
-
-   Header, video summary and tabs stay fixed.
-   Only the active tab's content area scrolls.
    ========================================= */
 
 #fourk-root .fourk-video-summary {
-  flex: 0 0 auto;
-  padding: 12px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  padding: var(--fourk-space-md) var(--fourk-space-lg) var(--fourk-space-lg);
   border-bottom: 1px solid var(--fourk-border);
   background: var(--fourk-bg-sunken);
 }
 
-#fourk-root .fourk-view-area {
+#fourk-root .fourk-scroll-area {
   flex: 1 1 auto;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--fourk-border-strong) transparent;
 }
 
-#fourk-root .fourk-view-area > [data-view] {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
+#fourk-root .fourk-range-section {
+  padding-bottom: var(--fourk-space-lg);
+  margin-bottom: var(--fourk-space-lg);
+  border-bottom: 1px solid var(--fourk-border);
 }
 
-#fourk-root .fourk-video-indicator {
+#fourk-root .fourk-live-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fourk-space-sm);
+  margin-bottom: 6px;
+}
+
+#fourk-root .fourk-live-left {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--fourk-danger);
-  font-size: 10.5px;
+  min-width: 0;
+  color: var(--fourk-success-strong);
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
 }
 
-#fourk-root .fourk-video-indicator i {
+#fourk-root .fourk-live-dot {
   display: block;
+  flex: 0 0 6px;
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: currentColor;
+  animation: fourk-pulse 1.8s ease-in-out infinite;
+}
+
+#fourk-root .fourk-live-time {
+  flex: 0 0 auto;
+  color: var(--fourk-muted);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 #fourk-root .fourk-video-title {
   overflow: hidden;
-  margin: 7px 0 4px;
+  margin: 0 0 10px;
   color: var(--fourk-text);
-  font-size: 13.5px;
-  font-weight: 650;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-#fourk-root .fourk-video-meta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--fourk-muted);
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-}
-
-#fourk-root .fourk-dot {
-  opacity: 0.5;
-}
-
 #fourk-root .fourk-thumbnail-actions {
   display: flex;
-  align-items: stretch;
-  margin-top: 10px;
-  border: 1px solid var(--fourk-border-strong);
-  border-radius: var(--fourk-radius-inner);
-  overflow: hidden;
-  background: var(--fourk-bg);
+  flex-wrap: wrap;
+  gap: var(--fourk-space-sm);
 }
 
-#fourk-root .fourk-split-btn {
-  display: flex;
+#fourk-root .fourk-chip-btn {
+  display: inline-flex;
   flex: 1;
-  min-width: 0;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 10px 6px;
-  border: 0;
-  color: var(--fourk-accent-strong);
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--fourk-border);
+  border-radius: var(--fourk-radius-chip);
+  color: var(--fourk-muted);
   background: var(--fourk-bg);
-  font-size: 10.5px;
-  font-weight: 650;
-  line-height: 1.2;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 120ms ease;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
 }
 
-#fourk-root .fourk-split-btn:hover {
-  background: var(--fourk-accent-wash);
+#fourk-root .fourk-chip-btn svg {
+  width: 14px;
+  height: 14px;
+  color: var(--fourk-accent-strong);
 }
 
-#fourk-root .fourk-split-btn:disabled {
+#fourk-root .fourk-chip-btn:hover {
+  color: var(--fourk-text);
+  border-color: var(--fourk-border-strong);
+  background: var(--fourk-bg-sunken);
+}
+
+#fourk-root .fourk-chip-btn:disabled {
   cursor: wait;
   opacity: 0.6;
 }
 
-#fourk-root .fourk-split-icon {
-  font-size: 15px;
-  line-height: 1;
-}
-
-#fourk-root .fourk-split-divider {
-  flex: 0 0 auto;
-  width: 1px;
-  background: var(--fourk-border-strong);
-}
-
 /* =========================================
-   Form / tabs
+   Mode tabs
    ========================================= */
 
-#fourk-root .fourk-form {
-  overflow: hidden;
-}
-
-#fourk-root .fourk-recording,
-#fourk-root .fourk-result {
-  padding: 16px;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--fourk-border-strong) transparent;
-}
-
-#fourk-root .fourk-recording {
-  padding-top: 24px;
-  padding-bottom: 16px;
-}
-
 #fourk-root .fourk-tabs {
-  flex: 0 0 auto;
   display: flex;
   gap: 4px;
-  padding: 16px 16px 0;
-  border-bottom: 1px solid var(--fourk-border);
-}
-
-#fourk-root .fourk-panels {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 16px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--fourk-border-strong) transparent;
+  margin: var(--fourk-space-lg) var(--fourk-space-lg) 0;
+  padding: 4px;
+  border-radius: var(--fourk-radius-card);
+  background: var(--fourk-bg-sunken);
 }
 
 #fourk-root .fourk-tab {
+  display: flex;
   flex: 1;
-  padding: 10px 4px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 4px;
   border: 0;
-  border-bottom: 2px solid transparent;
-  background: transparent;
+  border-radius: var(--fourk-radius-control);
   color: var(--fourk-muted);
-  font-size: 12.5px;
-  font-weight: 650;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  transition: color 140ms ease, border-color 140ms ease;
+  transition: background 140ms ease, color 140ms ease, box-shadow 140ms ease;
+}
+
+#fourk-root .fourk-tab svg {
+  width: 15px;
+  height: 15px;
 }
 
 #fourk-root .fourk-tab:hover {
@@ -300,22 +344,74 @@
 
 #fourk-root .fourk-tab.is-active {
   color: var(--fourk-accent-strong);
-  border-bottom-color: var(--fourk-accent);
+  background: var(--fourk-bg);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
 }
+
+#fourk-root .fourk-panels {
+  padding: var(--fourk-space-lg);
+}
+
+/* =========================================
+   Section labels & badges
+   ========================================= */
 
 #fourk-root .fourk-section-label {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--fourk-space-sm);
   margin-bottom: 10px;
+}
+
+#fourk-root .fourk-section-label-left {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   color: var(--fourk-text);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 650;
 }
 
-#fourk-root .fourk-section-label span:last-child {
-  color: var(--fourk-accent-strong);
-  font-weight: 650;
+#fourk-root .fourk-section-label-left svg {
+  width: 14px;
+  height: 14px;
+  color: var(--fourk-muted-2);
+}
+
+#fourk-root .fourk-duration-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px 3px 8px;
+  border-radius: var(--fourk-radius-pill);
+  color: var(--fourk-success-strong);
+  background: var(--fourk-success-wash);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+#fourk-root .fourk-duration-badge::before {
+  content: "⏱";
+  margin-right: 4px;
+  font-size: 10px;
+}
+
+#fourk-root .fourk-duration-badge.is-invalid {
+  color: var(--fourk-danger-strong);
+  background: var(--fourk-danger-wash);
+}
+
+#fourk-root .fourk-field-label {
+  display: block;
+  margin: 0 0 8px 1px;
+  color: var(--fourk-muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 /* =========================================
@@ -326,34 +422,54 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+  margin-bottom: var(--fourk-space-lg);
 }
 
-#fourk-root .fourk-time-field {
+#fourk-root .fourk-time-card {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  padding: var(--fourk-space-md);
+  border: 1px solid var(--fourk-border);
+  border-radius: var(--fourk-radius-card);
+  background: var(--fourk-bg-sunken);
 }
 
-#fourk-root .fourk-time-field > span {
-  display: block;
-  margin: 0 0 6px 2px;
+#fourk-root .fourk-time-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+#fourk-root .fourk-time-card-head span:first-child {
   color: var(--fourk-muted);
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+#fourk-root .fourk-time-tag {
+  color: var(--fourk-accent-strong);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 #fourk-root .fourk-input-wrap {
   display: flex;
   align-items: stretch;
-  height: 46px;
+  height: 44px;
   border: 1px solid var(--fourk-border-strong);
-  border-radius: var(--fourk-radius-inner);
-  background: var(--fourk-bg-sunken);
+  border-radius: var(--fourk-radius-control);
+  background: var(--fourk-bg);
   overflow: hidden;
   transition: 140ms ease;
 }
 
 #fourk-root .fourk-input-wrap:focus-within {
   border-color: var(--fourk-accent);
-  background: var(--fourk-bg);
   box-shadow: 0 0 0 3px var(--fourk-accent-wash);
 }
 
@@ -365,133 +481,162 @@
   outline: none;
   color: var(--fourk-text);
   background: transparent;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
 
 #fourk-root .fourk-text-link {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   width: 100%;
-  margin-top: 6px;
+  margin-top: 8px;
   padding: 2px 0;
   border: 0;
   color: var(--fourk-accent-strong);
   background: transparent;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 650;
   cursor: pointer;
   text-align: left;
   transition: opacity 140ms ease;
 }
 
+#fourk-root .fourk-text-link svg {
+  width: 12px;
+  height: 12px;
+}
+
 #fourk-root .fourk-text-link:hover {
   opacity: 0.7;
 }
 
-#fourk-root .fourk-hint-text {
-  margin: 8px 2px 16px;
-  color: var(--fourk-muted);
-  font-size: 10.5px;
-  line-height: 1.55;
-}
-
-#fourk-root .fourk-frame-time .fourk-input-wrap {
-  height: 51px;
-}
-
-#fourk-root .fourk-frame-time .fourk-input-wrap input {
-  font-size: 18px;
-}
-
-/* =========================================
-   Timeline
-   ========================================= */
-
-#fourk-root .fourk-timeline {
-  margin: 4px 2px 16px;
-}
-
-#fourk-root .fourk-timeline-track {
-  position: relative;
-  height: 4px;
-  border-radius: 999px;
-  background: var(--fourk-bg-sunken-strong);
-}
-
-#fourk-root .fourk-timeline-selection {
-  position: absolute;
-  top: 0;
-  height: 100%;
-  min-width: 2px;
-  border-radius: inherit;
-  background: var(--fourk-accent);
-}
-
-#fourk-root .fourk-handle {
-  position: absolute;
-  top: 50%;
-  width: 14px;
-  height: 14px;
-  border: 3px solid white;
-  border-radius: 50%;
-  background: var(--fourk-accent);
-  outline: 1px solid var(--fourk-border-strong);
-  transform: translate(-50%, -50%);
-}
-
-#fourk-root .fourk-timeline-labels {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 8px;
-  color: var(--fourk-muted-2);
-  font-size: 9.5px;
+#fourk-root .fourk-live-hint {
   font-variant-numeric: tabular-nums;
 }
 
+#fourk-root .fourk-frame-time {
+  margin-bottom: var(--fourk-space-lg);
+}
+
+#fourk-root .fourk-frame-time .fourk-input-wrap {
+  height: 56px;
+}
+
+#fourk-root .fourk-frame-time .fourk-input-wrap input {
+  font-size: 20px;
+}
+
 /* =========================================
-   Quick duration / segmented controls
+   Segmented controls
    ========================================= */
 
-#fourk-root .fourk-quick-row {
+#fourk-root .fourk-inline-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
-  color: var(--fourk-muted);
-  font-size: 10.5px;
+  margin-bottom: var(--fourk-space-lg);
 }
 
-#fourk-root .fourk-quick-row > div {
+#fourk-root .fourk-inline-row > span {
+  color: var(--fourk-muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+#fourk-root .fourk-segment {
   display: flex;
-  gap: 4px;
+  gap: 3px;
   padding: 3px;
-  border-radius: 999px;
+  border-radius: var(--fourk-radius-control);
   background: var(--fourk-bg-sunken);
 }
 
-#fourk-root .fourk-quick-row button {
+#fourk-root .fourk-segment.fourk-segment-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin-bottom: var(--fourk-space-lg);
+}
+
+#fourk-root .fourk-segment-btn {
   min-width: 38px;
-  padding: 6px 9px;
+  padding: 7px 10px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 6px;
   color: var(--fourk-muted);
   background: transparent;
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 650;
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease;
+  transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease;
 }
 
-#fourk-root .fourk-quick-row button:hover {
+#fourk-root .fourk-segment-btn:hover {
   color: var(--fourk-text);
 }
 
-#fourk-root .fourk-quick-row button.is-active {
+#fourk-root .fourk-segment-btn.is-active {
+  color: #ffffff;
+  background: var(--fourk-accent);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.16);
+}
+
+#fourk-root .fourk-segment-btn:disabled {
+  display: none;
+}
+
+/* =========================================
+   Notice card & privacy footer
+   ========================================= */
+
+#fourk-root .fourk-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fourk-space-sm);
+  margin-bottom: var(--fourk-space-lg);
+  padding: var(--fourk-space-md);
+  border: 1px solid var(--fourk-border);
+  border-radius: var(--fourk-radius-card);
+  background: var(--fourk-bg-sunken);
+}
+
+#fourk-root .fourk-notice svg {
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  color: var(--fourk-accent-strong);
+}
+
+#fourk-root .fourk-notice p {
+  margin: 0;
+  color: var(--fourk-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+#fourk-root .fourk-notice p strong {
   color: var(--fourk-text);
-  background: var(--fourk-bg);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+  font-weight: 650;
+}
+
+#fourk-root .fourk-privacy {
+  margin: var(--fourk-space-md) 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--fourk-muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+}
+
+#fourk-root .fourk-privacy svg {
+  width: 13px;
+  height: 13px;
+  color: var(--fourk-success-strong);
 }
 
 /* =========================================
@@ -499,19 +644,44 @@
    ========================================= */
 
 #fourk-root .fourk-message {
-  margin: 0 0 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: var(--fourk-space-md) 0;
   padding: 10px 12px;
   border: 1px solid var(--fourk-danger-wash);
-  border-radius: var(--fourk-radius-inner);
-  color: var(--fourk-danger);
+  border-radius: var(--fourk-radius-control);
+  color: var(--fourk-danger-strong);
   background: var(--fourk-danger-wash);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+#fourk-root .fourk-message::before {
+  content: "!";
+  display: flex;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #ffffff;
+  background: var(--fourk-danger);
   font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
 }
 
 #fourk-root .fourk-message[data-type="success"] {
-  border-color: var(--fourk-success-wash);
-  color: var(--fourk-success);
+  border-color: var(--fourk-success-wash-strong);
+  color: var(--fourk-success-strong);
   background: var(--fourk-success-wash);
+}
+
+#fourk-root .fourk-message[data-type="success"]::before {
+  content: "✓";
+  background: var(--fourk-success);
 }
 
 /* =========================================
@@ -522,21 +692,28 @@
 #fourk-root .fourk-secondary {
   display: flex;
   width: 100%;
-  height: 48px;
+  height: 46px;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 700;
+  border-radius: var(--fourk-radius-control);
+  font-size: 14px;
+  font-weight: 650;
   cursor: pointer;
   transition: transform 120ms ease, filter 120ms ease, background 120ms ease, border-color 120ms ease;
+}
+
+#fourk-root .fourk-primary svg,
+#fourk-root .fourk-secondary svg {
+  width: 17px;
+  height: 17px;
 }
 
 #fourk-root .fourk-primary {
   border: 0;
   color: white;
   background: var(--fourk-accent);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
 }
 
 #fourk-root .fourk-primary:hover {
@@ -560,6 +737,14 @@
   opacity: 0.7;
 }
 
+#fourk-root .fourk-button-trailing {
+  margin-left: auto;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
 #fourk-root .fourk-button-spinner {
   width: 15px;
   height: 15px;
@@ -576,13 +761,34 @@
   background: var(--fourk-bg);
 }
 
+#fourk-root .fourk-secondary svg {
+  color: var(--fourk-accent-strong);
+}
+
 #fourk-root .fourk-secondary:hover {
   border-color: var(--fourk-muted-2);
   background: var(--fourk-bg-sunken);
 }
 
+#fourk-root .fourk-secondary.fourk-ghost {
+  margin-top: 4px;
+  border: 0;
+  color: var(--fourk-muted);
+  background: transparent;
+  height: 38px;
+}
+
+#fourk-root .fourk-secondary.fourk-ghost svg {
+  color: currentColor;
+}
+
+#fourk-root .fourk-secondary.fourk-ghost:hover {
+  color: var(--fourk-accent-strong);
+  background: var(--fourk-bg-sunken);
+}
+
 #fourk-root .fourk-secondary.fourk-danger {
-  color: var(--fourk-danger);
+  color: var(--fourk-danger-strong);
   border-color: var(--fourk-danger-wash);
   background: var(--fourk-danger-wash);
 }
@@ -592,58 +798,186 @@
   background: #fee2e2;
 }
 
-#fourk-root .fourk-privacy {
-  margin: 10px 0 0;
-  color: var(--fourk-muted-2);
-  font-size: 10px;
-  text-align: center;
-}
-
 /* =========================================
    Recording view
    ========================================= */
 
-#fourk-root .fourk-recording-visual {
+#fourk-root .fourk-recording {
+  padding: var(--fourk-space-lg);
+}
+
+#fourk-root .fourk-target-card {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 24px;
+  gap: var(--fourk-space-md);
+  margin-bottom: var(--fourk-space-md);
+  padding: var(--fourk-space-md);
+  border: 1px solid var(--fourk-border);
+  border-radius: var(--fourk-radius-card);
+  background: var(--fourk-bg-sunken);
 }
 
-#fourk-root .fourk-recording-ring {
-  display: grid;
-  width: 60px;
-  height: 60px;
-  flex: 0 0 60px;
-  place-items: center;
-  border: 4px solid var(--fourk-accent-wash);
-  border-top-color: var(--fourk-accent);
-  border-radius: 50%;
-  animation: fourk-spin 1.5s linear infinite;
-}
-
-#fourk-root .fourk-recording-ring span {
+#fourk-root .fourk-target-icon {
+  display: flex;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--fourk-radius-control);
   color: var(--fourk-accent-strong);
-  font-size: 11px;
+  background: var(--fourk-accent-wash);
+}
+
+#fourk-root .fourk-target-icon svg {
+  width: 19px;
+  height: 19px;
+}
+
+#fourk-root .fourk-target-body {
+  flex: 1;
+  min-width: 0;
+}
+
+#fourk-root .fourk-target-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 2px;
+  color: var(--fourk-accent-strong);
+  font-size: 10px;
   font-weight: 700;
-  animation: fourk-counter-spin 1.5s linear infinite;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-#fourk-root .fourk-recording-visual strong {
-  display: block;
-  margin-bottom: 4px;
-  color: var(--fourk-text);
-  font-size: 13.5px;
-}
-
-#fourk-root .fourk-recording-visual p {
-  margin: 0;
+#fourk-root .fourk-target-head span:last-child {
   color: var(--fourk-muted);
-  font-size: 10.5px;
+  font-weight: 650;
+  text-transform: none;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+#fourk-root .fourk-target-range {
+  overflow: hidden;
+  color: var(--fourk-text);
+  font-size: 13px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#fourk-root .fourk-target-meta {
+  overflow: hidden;
+  margin-top: 1px;
+  color: var(--fourk-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#fourk-root .fourk-process-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--fourk-space-xl) var(--fourk-space-lg) var(--fourk-space-lg);
+  border: 1px solid var(--fourk-border);
+  border-radius: var(--fourk-radius-card);
+  background: var(--fourk-bg);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  text-align: center;
+}
+
+#fourk-root .fourk-ring-wrap {
+  position: relative;
+  width: 108px;
+  height: 108px;
+  margin-bottom: var(--fourk-space-md);
+}
+
+#fourk-root .fourk-ring {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+#fourk-root .fourk-ring-track {
+  color: var(--fourk-bg-sunken-strong);
+}
+
+#fourk-root .fourk-ring-progress {
+  color: var(--fourk-accent);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 120ms linear;
+}
+
+#fourk-root .fourk-ring-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+#fourk-root .fourk-ring-percent {
+  display: flex;
+  align-items: baseline;
+  gap: 1px;
+  color: var(--fourk-text);
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+#fourk-root .fourk-ring-percent::after {
+  content: "%";
+  color: var(--fourk-accent-strong);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+#fourk-root .fourk-ring-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--fourk-success-strong);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+#fourk-root .fourk-ring-status i {
+  display: block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: fourk-pulse 1.4s ease-in-out infinite;
+}
+
+#fourk-root .fourk-process-heading {
+  margin: 2px 0 4px;
+  color: var(--fourk-text);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+#fourk-root .fourk-process-desc {
+  margin: 0 0 var(--fourk-space-md);
+  color: var(--fourk-muted);
+  font-size: 12px;
 }
 
 #fourk-root .fourk-progress {
   overflow: hidden;
+  width: 100%;
   height: 6px;
   border-radius: 999px;
   background: var(--fourk-bg-sunken-strong);
@@ -661,44 +995,78 @@
 #fourk-root .fourk-progress-meta {
   display: flex;
   justify-content: space-between;
-  margin: 8px 1px 16px;
+  width: 100%;
+  margin: 8px 1px 0;
   color: var(--fourk-muted);
-  font-size: 10px;
+  font-size: 12px;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+
+#fourk-root .fourk-recording .fourk-secondary.fourk-danger {
+  margin-top: var(--fourk-space-lg);
 }
 
 /* =========================================
    Result view
    ========================================= */
 
+#fourk-root .fourk-result {
+  padding: var(--fourk-space-lg);
+}
+
 #fourk-root .fourk-success-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: var(--fourk-space-md);
+  padding: var(--fourk-space-md);
+  border: 1px solid var(--fourk-success-wash-strong);
+  border-radius: var(--fourk-radius-card);
+  color: var(--fourk-success-strong);
+  background: var(--fourk-success-wash);
+}
+
+#fourk-root .fourk-badge-icon {
+  display: flex;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #ffffff;
+  background: var(--fourk-success);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+#fourk-root .fourk-success-badge-text {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  margin-bottom: 16px;
-  padding: 12px 16px;
-  border-radius: var(--fourk-radius-inner);
-  color: white;
-  background: var(--fourk-success);
+  min-width: 0;
 }
 
 #fourk-root .fourk-success-badge strong {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
 }
 
 #fourk-root .fourk-success-badge small {
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 10.5px;
+  color: var(--fourk-success-strong);
+  opacity: 0.85;
+  font-size: 12px;
 }
 
 #fourk-root .fourk-preview-wrap {
   position: relative;
   overflow: hidden;
   aspect-ratio: 16 / 9;
-  margin-bottom: 12px;
+  margin-bottom: var(--fourk-space-md);
   border: 1px solid var(--fourk-border);
-  border-radius: var(--fourk-radius-inner);
+  border-radius: var(--fourk-radius-card);
   background: #10141a;
 }
 
@@ -718,43 +1086,90 @@
   transform: translateY(-50%);
 }
 
-#fourk-root .fourk-preview-label {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  padding: 4px 7px;
-  border-radius: 999px;
-  color: rgba(255, 255, 255, 0.85);
-  background: rgba(16, 20, 26, 0.55);
-  backdrop-filter: blur(6px);
-  font-size: 8px;
-  font-weight: 700;
-  pointer-events: none;
+#fourk-root .fourk-file-info {
+  display: flex;
+  align-items: center;
+  gap: var(--fourk-space-sm);
+  min-width: 0;
+  margin-bottom: var(--fourk-space-md);
+  padding: var(--fourk-space-sm) var(--fourk-space-md);
+  border: 1px solid var(--fourk-border);
+  border-radius: var(--fourk-radius-card);
+  background: var(--fourk-bg-sunken);
 }
 
-#fourk-root .fourk-file-info {
+#fourk-root .fourk-file-icon {
+  display: flex;
+  flex: 0 0 auto;
+  color: var(--fourk-accent-strong);
+}
+
+#fourk-root .fourk-file-icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+#fourk-root .fourk-file-text {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  gap: 2px;
-  margin-bottom: 12px;
-  padding: 8px 12px;
-  border: 1px solid var(--fourk-border);
-  border-radius: var(--fourk-radius-inner);
-  background: var(--fourk-bg-sunken);
+  gap: 1px;
 }
 
 #fourk-root .fourk-file-info strong {
   overflow: hidden;
   color: var(--fourk-text);
-  font-size: 11.5px;
+  font-size: 13px;
+  font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 #fourk-root .fourk-file-info small {
   color: var(--fourk-muted);
-  font-size: 9.5px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* =========================================
+   Export (Clip ready → Audio / Subtitles)
+   ========================================= */
+
+#fourk-root .fourk-export {
+  margin: var(--fourk-space-md) 0;
+}
+
+#fourk-root .fourk-export-meta {
+  margin-left: 6px;
+  color: var(--fourk-muted);
+  font-weight: 650;
+  font-size: 11px;
+}
+
+#fourk-root .fourk-accordion-toggle {
+  justify-content: flex-start;
+  gap: var(--fourk-space-sm);
+  color: var(--fourk-text);
+}
+
+#fourk-root .fourk-accordion-toggle svg:first-child {
+  color: var(--fourk-accent-strong);
+}
+
+#fourk-root .fourk-accordion-label {
+  flex: 1;
+  text-align: left;
+  font-weight: 650;
+}
+
+#fourk-root .fourk-accordion-chevron {
+  display: flex;
+  color: var(--fourk-muted);
+  transition: transform 160ms ease;
+}
+
+#fourk-root .fourk-accordion-toggle[aria-expanded="true"] .fourk-accordion-chevron {
+  transform: rotate(180deg);
 }
 
 /* =========================================
@@ -762,21 +1177,23 @@
    ========================================= */
 
 #fourk-root .fourk-sub-panel {
-  padding-top: 1px;
+  margin-top: var(--fourk-space-sm);
+  padding-top: var(--fourk-space-sm);
 }
 
 #fourk-root .fourk-sub-field {
   display: block;
-  margin-bottom: 12px;
+  margin-bottom: var(--fourk-space-md);
 }
 
 #fourk-root .fourk-select-wrap {
+  position: relative;
   display: flex;
   align-items: center;
-  height: 42px;
-  padding: 0 12px;
+  height: 40px;
+  padding: 0 30px 0 12px;
   border: 1px solid var(--fourk-border-strong);
-  border-radius: var(--fourk-radius-inner);
+  border-radius: var(--fourk-radius-control);
   background: var(--fourk-bg-sunken);
   transition: 140ms ease;
 }
@@ -793,10 +1210,11 @@
   padding: 0;
   border: 0;
   outline: none;
+  appearance: none;
   color: var(--fourk-text);
   background: transparent;
   font: inherit;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 650;
   cursor: pointer;
 }
@@ -811,20 +1229,18 @@
   cursor: not-allowed;
 }
 
-#fourk-root .fourk-sub-formats {
-  margin-bottom: 12px;
-}
-
-#fourk-root .fourk-sub-formats button {
-  min-width: 40px;
-  padding: 6px 9px;
+#fourk-root .fourk-select-chevron {
+  position: absolute;
+  right: 10px;
+  color: var(--fourk-muted);
+  pointer-events: none;
 }
 
 #fourk-root .fourk-sub-preview {
-  margin: 12px 0 0;
-  padding: 8px;
+  margin: var(--fourk-space-sm) 0 0;
+  padding: 4px;
   border: 1px solid var(--fourk-border);
-  border-radius: var(--fourk-radius-inner);
+  border-radius: var(--fourk-radius-card);
   background: var(--fourk-bg);
 }
 
@@ -846,13 +1262,27 @@
   background: var(--fourk-bg-sunken);
 }
 
+#fourk-root .fourk-sub-row.is-active {
+  background: var(--fourk-accent-wash);
+}
+
+#fourk-root .fourk-sub-row.is-active .fourk-sub-time {
+  color: #ffffff;
+  background: var(--fourk-accent);
+}
+
+#fourk-root .fourk-sub-row.is-active .fourk-sub-text {
+  color: var(--fourk-accent-strong);
+  font-weight: 650;
+}
+
 #fourk-root .fourk-sub-time {
   flex: 0 0 auto;
   padding: 2px 7px;
-  border-radius: 999px;
+  border-radius: var(--fourk-radius-chip);
   color: var(--fourk-accent-strong);
   background: var(--fourk-accent-wash);
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -860,13 +1290,23 @@
 #fourk-root .fourk-sub-text {
   min-width: 0;
   color: var(--fourk-text);
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
 #fourk-root .fourk-sub-actions {
-  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--fourk-space-sm);
+  margin-top: var(--fourk-space-md);
+}
+
+#fourk-root .fourk-sub-actions .fourk-secondary,
+#fourk-root .fourk-sub-actions .fourk-primary {
+  height: 38px;
+  margin-top: 0;
+  font-size: 12px;
 }
 
 /* =========================================
@@ -877,8 +1317,9 @@
   to { transform: rotate(360deg); }
 }
 
-@keyframes fourk-counter-spin {
-  to { transform: rotate(-360deg); }
+@keyframes fourk-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
 }
 
 /* =========================================
@@ -887,7 +1328,7 @@
 
 @media (min-height: 760px) and (min-width: 900px) {
   #fourk-root {
-    width: 400px;
+    width: 440px;
   }
 }
 
@@ -898,7 +1339,6 @@
     bottom: 8px;
     left: 8px;
     width: auto;
-    max-height: none;
   }
 }
 

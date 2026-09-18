@@ -7,17 +7,39 @@
   window.__fourKPanelLoaded = true;
 
   const { parseTime, formatTime, formatPreciseTime, clamp, secondsFromDigitBuffer } = window.FourKTime;
-  const { parseCaptions, parseTranscript, finalizeCues, normalizeText, stripTags, renderCues, formatTimestamp, FORMAT_META, isCaptionUrl, withCaptionFormat } = window.FourKSubtitles;
+  const { parseCaptions, parseTranscript, finalizeCues, normalizeText, stripTags, renderCues, formatTimestamp, FORMAT_META, isCaptionUrl, withCaptionFormat, filterCues } = window.FourKSubtitles;
   const MAX_CLIP_SECONDS = 15 * 60;
+  const FRAME_FORMAT_META = {
+    png: { mime: "image/png", extension: "png", label: "PNG" },
+    jpeg: { mime: "image/jpeg", extension: "jpg", label: "JPG" },
+    webp: { mime: "image/webp", extension: "webp", label: "WebP" },
+    avif: { mime: "image/avif", extension: "avif", label: "AVIF" }
+  };
   const MAX_TIME_MASK_DIGITS = 6;
   const timeInputBuffers = new WeakMap();
   const CAPTION_FORMATS = ["json3", "srv3", "srv1", "vtt"];
-  const AUTO_SUBTITLE_DELAY_MS = 1200;
-  const AUTO_SUBTITLE_RETRY_DELAY_MS = 6000;
-  const AUTO_SUBTITLE_MAX_TRIES = 2;
   const BRIDGE_REQUEST = "__fourKBridgeRequest";
   const BRIDGE_REPLY = "__fourKBridgeReply";
   const POT_CACHE_AGE_MS = 60 * 1000;
+  const RECORDING_RING_RADIUS = 46;
+  const RECORDING_RING_CIRCUMFERENCE = 2 * Math.PI * RECORDING_RING_RADIUS;
+
+  // Inline icon set (20x20 viewBox, stroke = currentColor) — no external icon font or
+  // network fetch, kept as small reusable strings so multi-use icons aren't duplicated.
+  const ICON_CLOSE = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+  const ICON_THUMBNAIL = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5M4 14.5V16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const ICON_COPY = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="7" y="7" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.6"/><path d="M13 7V5.5A1.5 1.5 0 0 0 11.5 4h-7A1.5 1.5 0 0 0 3 5.5v7A1.5 1.5 0 0 0 4.5 14H6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+  const ICON_CLOCK = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7.25" stroke="currentColor" stroke-width="1.6"/><path d="M10 6.4V10l2.6 1.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const ICON_MOVIE = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="3" y="5" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M8.3 8.1v3.8l3.3-1.9-3.3-1.9Z" fill="currentColor"/></svg>`;
+  const ICON_CAMERA = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 7.6A1.5 1.5 0 0 1 5.5 6.1h1.3l.8-1.3a1 1 0 0 1 .9-.5h3a1 1 0 0 1 .9.5l.8 1.3h1.3A1.5 1.5 0 0 1 16 7.6v6.8a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 4 14.4V7.6Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="10" cy="10.8" r="2.5" stroke="currentColor" stroke-width="1.5"/></svg>`;
+  const ICON_INFO = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7.25" stroke="currentColor" stroke-width="1.5"/><path d="M10 9.3v4.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="10" cy="6.7" r="0.9" fill="currentColor"/></svg>`;
+  const ICON_SHIELD = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 3.2 15.6 5.3v4.2c0 3.7-2.4 6.4-5.6 7.3-3.2-.9-5.6-3.6-5.6-7.3V5.3L10 3.2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M7.5 10.1 9.2 11.8l3.3-3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const ICON_DOWNLOAD = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 4v8.6M6.6 9.8 10 13.2l3.4-3.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 14.6v1.2a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-1.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+  const ICON_HEADPHONES = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4.2 11.7v-1.2a5.8 5.8 0 0 1 11.6 0v1.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="3.1" y="11.2" width="3.1" height="4.8" rx="1.3" stroke="currentColor" stroke-width="1.5"/><rect x="13.8" y="11.2" width="3.1" height="4.8" rx="1.3" stroke="currentColor" stroke-width="1.5"/></svg>`;
+  const ICON_SUBTITLES = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="3" y="5" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M6.1 11.8c-1 0-1.7-.7-1.7-2s.7-2 1.7-2c.5 0 .9.2 1.2.5M11.7 11.8c-1 0-1.7-.7-1.7-2s.7-2 1.7-2c.5 0 .9.2 1.2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`;
+  const ICON_CHEVRON = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5.5 8 10 12.3 14.5 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const ICON_ARROW_BACK = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M12.3 5.2 7 10.4l5.3 5.2M7.5 10.4H16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const ICON_FILE = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M6 3.5h5.4l3.1 3.1V16a1 1 0 0 1-1 1h-7.5a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M11.3 3.6v3.1h3.1" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
   const capturedCaptionUrls = [];
   const bridgeRequests = new Map();
   let bridgeRequestId = 0;
@@ -26,14 +48,21 @@
   const state = {
     root: null,
     video: null,
-    recorder: null,
+    videoRecorder: null,
+    audioRecorder: null,
     captureStream: null,
     clipUrl: null,
     clipBlob: null,
     clipFileName: "",
-    clipAudioExtension: "",
+    clipFrameFormat: "png",
+    audioUrl: null,
+    audioBlob: null,
+    audioFileName: "",
+    audioExtension: "",
+    lastClipSelection: null,
     outputKind: null,
     mode: "video",
+    frameFormat: "png",
     recording: false,
     cancelling: false,
     currentUrl: location.href,
@@ -42,13 +71,12 @@
     progressInterval: null,
     frameRequest: null,
     playbackGuard: null,
+    timeUpdateHandler: null,
+    activeSelection: null,
     boundVideos: new WeakSet(),
     subTracks: [],
     subCues: [],
     subVideoId: "",
-    subAutoVideoId: "",
-    subAutoTries: 0,
-    subAutoTimer: null,
     subNoTracks: false,
     subLoading: false,
     subFormat: "txt",
@@ -92,165 +120,220 @@
         <section class="fourk-card">
           <header class="fourk-header">
             <div class="fourk-brand">
-              <span class="fourk-brand-name">4K</span>
-              <span class="fourk-brand-tag">Fast, private video clipping</span>
+              <span class="fourk-logo" aria-hidden="true">4K</span>
+              <div class="fourk-brand-copy">
+                <span class="fourk-brand-name">Video Clipper</span>
+                <span class="fourk-version-badge" data-role="version-badge"></span>
+              </div>
             </div>
-            <button class="fourk-close-btn" data-action="collapse" type="button" aria-label="Close panel">Close</button>
+            <button class="fourk-icon-btn" data-action="collapse" type="button" aria-label="Close panel">
+              ${ICON_CLOSE}
+            </button>
           </header>
 
-          <div class="fourk-video-summary">
-            <div class="fourk-video-indicator"><i></i><span>YouTube video detected</span></div>
-            <p class="fourk-video-title">Loading video info…</p>
-            <div class="fourk-video-meta">
-              <span data-role="current-time">0:00</span><span class="fourk-dot">•</span><span data-role="video-duration">--:--</span>
+          <div class="fourk-scroll-area">
+            <div class="fourk-video-summary">
+              <div class="fourk-live-row">
+                <div class="fourk-live-left"><span class="fourk-live-dot" aria-hidden="true"></span><span>YouTube Watch</span></div>
+                <div class="fourk-live-time"><span data-role="current-time">0:00</span> / <span data-role="video-duration">--:--</span></div>
+              </div>
+              <p class="fourk-video-title">Loading video info…</p>
+              <div class="fourk-thumbnail-actions">
+                <button type="button" class="fourk-chip-btn" data-action="get-thumbnail">
+                  ${ICON_THUMBNAIL}
+                  <span>Download Thumbnail</span>
+                </button>
+                <button type="button" class="fourk-chip-btn" data-action="get-title">
+                  ${ICON_COPY}
+                  <span>Copy Title</span>
+                </button>
+              </div>
             </div>
-            <div class="fourk-thumbnail-actions">
-              <button type="button" class="fourk-split-btn" data-action="get-thumbnail">
-                <span class="fourk-split-icon" aria-hidden="true">🖼️</span>
-                <span>Get Thumbnail</span>
-              </button>
-              <span class="fourk-split-divider" aria-hidden="true"></span>
-              <button type="button" class="fourk-split-btn" data-action="get-title">
-                <span class="fourk-split-icon" aria-hidden="true">📋</span>
-                <span>Get Title</span>
-              </button>
-            </div>
-          </div>
 
-          <div class="fourk-view-area">
             <div class="fourk-form" data-view="form">
               <nav class="fourk-tabs" role="tablist" aria-label="Choose a tool">
-                <button type="button" class="fourk-tab is-active" data-tool="video" role="tab" aria-selected="true">Video</button>
-                <button type="button" class="fourk-tab" data-tool="audio" role="tab" aria-selected="false">Audio</button>
-                <button type="button" class="fourk-tab" data-tool="frame" role="tab" aria-selected="false">Frame</button>
-                <button type="button" class="fourk-tab" data-tool="sub" role="tab" aria-selected="false">Subtitles</button>
+                <button type="button" class="fourk-tab is-active" data-tool="video" role="tab" aria-selected="true">
+                  ${ICON_MOVIE}
+                  <span>Video Clip</span>
+                </button>
+                <button type="button" class="fourk-tab" data-tool="frame" role="tab" aria-selected="false">
+                  ${ICON_CAMERA}
+                  <span>Frame</span>
+                </button>
               </nav>
 
               <div class="fourk-panels">
-                <div data-mode-panel="range">
-                  <div class="fourk-section-label"><span data-role="range-heading">Video range</span><span data-role="selection-duration">30 seconds</span></div>
+                <div data-mode-panel="video">
+                  <div class="fourk-range-section">
+                    <div class="fourk-section-label">
+                      <span class="fourk-section-label-left"><span>Time range</span><span title="Accurate to the hundredth of a second">${ICON_INFO}</span></span>
+                      <span class="fourk-duration-badge" data-role="selection-duration">30 seconds</span>
+                    </div>
 
-                  <div class="fourk-time-grid">
-                    <label class="fourk-time-field">
-                      <span>Start time</span>
-                      <div class="fourk-input-wrap">
-                        <input data-input="start" value="0:00" inputmode="numeric" autocomplete="off" spellcheck="false" aria-label="Start time">
+                    <div class="fourk-time-grid">
+                      <div class="fourk-time-card">
+                        <div class="fourk-time-card-head"><span>Start time</span><span class="fourk-time-tag">IN</span></div>
+                        <div class="fourk-input-wrap">
+                          <input data-input="start" value="0:00" inputmode="numeric" autocomplete="off" spellcheck="false" aria-label="Start time">
+                        </div>
+                        <button type="button" class="fourk-text-link" data-action="set-start">${ICON_CLOCK}<span>Use current (<span class="fourk-live-hint">0:00</span>)</span></button>
                       </div>
-                      <button type="button" class="fourk-text-link" data-action="set-start">Use current position</button>
-                    </label>
-                    <label class="fourk-time-field">
-                      <span>End time</span>
-                      <div class="fourk-input-wrap">
-                        <input data-input="end" value="0:30" inputmode="numeric" autocomplete="off" spellcheck="false" aria-label="End time">
+                      <div class="fourk-time-card">
+                        <div class="fourk-time-card-head"><span>End time</span><span class="fourk-time-tag">OUT</span></div>
+                        <div class="fourk-input-wrap">
+                          <input data-input="end" value="0:30" inputmode="numeric" autocomplete="off" spellcheck="false" aria-label="End time">
+                        </div>
+                        <button type="button" class="fourk-text-link" data-action="set-end">${ICON_CLOCK}<span>Use current (<span class="fourk-live-hint">0:00</span>)</span></button>
                       </div>
-                      <button type="button" class="fourk-text-link" data-action="set-end">Use current position</button>
-                    </label>
-                  </div>
+                    </div>
 
-                  <p class="fourk-hint-text">Enter seconds, mm:ss, or hh:mm:ss.</p>
-
-                  <div class="fourk-timeline" aria-hidden="true">
-                    <div class="fourk-timeline-track"><div class="fourk-timeline-selection"></div><i class="fourk-handle fourk-handle-start"></i><i class="fourk-handle fourk-handle-end"></i></div>
-                    <div class="fourk-timeline-labels"><span>0:00</span><span data-role="timeline-end">--:--</span></div>
-                  </div>
-
-                  <div class="fourk-quick-row">
-                    <span>Quick clip</span>
-                    <div>
-                      <button type="button" data-duration="15">15s</button>
-                      <button type="button" data-duration="30" class="is-active">30s</button>
-                      <button type="button" data-duration="60">60s</button>
+                    <div class="fourk-inline-row">
+                      <span>Quick clip</span>
+                      <div class="fourk-segment">
+                        <button type="button" class="fourk-segment-btn" data-duration="15" aria-pressed="false">15s</button>
+                        <button type="button" class="fourk-segment-btn is-active" data-duration="30" aria-pressed="true">30s</button>
+                        <button type="button" class="fourk-segment-btn" data-duration="60" aria-pressed="false">60s</button>
+                      </div>
                     </div>
                   </div>
 
-                  <button class="fourk-primary" type="button" data-action="create">
-                    <span data-role="create-label">Create video clip</span>
-                  </button>
+                  <button class="fourk-primary" type="button" data-action="create">${ICON_MOVIE}<span>Create clip</span></button>
+
+                  <div class="fourk-notice">
+                    ${ICON_INFO}
+                    <p><strong>Note:</strong> clips can run up to 15 minutes. Creating one plays it back once in this tab, so it takes as long as the clip itself.</p>
+                  </div>
                 </div>
 
-                <div class="fourk-frame-panel" data-mode-panel="frame" hidden>
-                  <div class="fourk-section-label"><span>Capture frame</span><span>PNG</span></div>
-                  <label class="fourk-time-field fourk-frame-time">
-                    <span>Capture time</span>
+                <div data-mode-panel="frame" hidden>
+                  <span class="fourk-field-label">Capture timecode</span>
+                  <div class="fourk-frame-time">
                     <div class="fourk-input-wrap">
                       <input data-input="frame" value="0:00" inputmode="numeric" autocomplete="off" spellcheck="false" aria-label="Frame capture time">
                     </div>
-                    <button type="button" class="fourk-text-link" data-action="set-frame">Use current position</button>
-                  </label>
-                  <p class="fourk-hint-text">Enter seconds, mm:ss, or hh:mm:ss.</p>
+                    <button type="button" class="fourk-text-link" data-action="set-frame">${ICON_CLOCK}<span>Use current (<span class="fourk-live-hint">0:00</span>)</span></button>
+                  </div>
+
+                  <span class="fourk-field-label">Image format</span>
+                  <div class="fourk-segment fourk-segment-grid">
+                    <button type="button" class="fourk-segment-btn" data-frame-format="png">PNG</button>
+                    <button type="button" class="fourk-segment-btn" data-frame-format="jpeg">JPG</button>
+                    <button type="button" class="fourk-segment-btn" data-frame-format="webp">WebP</button>
+                    <button type="button" class="fourk-segment-btn" data-frame-format="avif">AVIF</button>
+                  </div>
+
                   <button class="fourk-primary" type="button" data-action="capture-frame"><span>Capture frame</span></button>
                 </div>
-
-                <div class="fourk-sub-panel" data-mode-panel="sub" hidden>
-                  <div class="fourk-section-label"><span>Subtitles</span><span data-role="sub-count">Waiting</span></div>
-
-                  <label class="fourk-time-field fourk-sub-field">
-                    <span>Language</span>
-                    <div class="fourk-select-wrap"><select data-select="sub-track" aria-label="Choose subtitle language"><option value="">Subtitles load automatically</option></select></div>
-                  </label>
-
-                  <div class="fourk-quick-row fourk-sub-formats">
-                    <span>Format</span>
-                    <div>
-                      <button type="button" data-sub-format="txt" class="is-active">TXT</button>
-                      <button type="button" data-sub-format="srt">SRT</button>
-                      <button type="button" data-sub-format="vtt">VTT</button>
-                      <button type="button" data-sub-format="json">JSON</button>
-                    </div>
-                  </div>
-
-                  <label class="fourk-time-field fourk-sub-field" data-role="sub-time-style-field">
-                    <span>TXT timestamp format</span>
-                    <div class="fourk-select-wrap"><select data-select="sub-time-style" aria-label="Timestamp style">
-                      <option value="clock">00:01:23.450 (hours:minutes:seconds.ms)</option>
-                      <option value="short">01:23 (minutes:seconds)</option>
-                      <option value="seconds">83.45 (decimal seconds)</option>
-                    </select></div>
-                  </label>
-
-                  <button class="fourk-primary" type="button" data-action="load-subtitles"><span>Load subtitles</span></button>
-
-                  <div class="fourk-sub-preview" data-role="sub-preview" hidden></div>
-
-                  <div class="fourk-sub-actions" data-role="sub-actions" hidden>
-                    <button class="fourk-secondary" type="button" data-action="copy-subtitles"><span data-role="copy-sub-label">Copy</span></button>
-                    <button class="fourk-secondary" type="button" data-action="download-subtitles"><span>Download</span></button>
-                  </div>
-                </div>
-
-                <div class="fourk-message" data-role="message" hidden></div>
-                <p class="fourk-privacy">Processed entirely in your browser. Nothing is uploaded.</p>
               </div>
+
+              <div class="fourk-message" data-role="message" hidden></div>
+              <p class="fourk-privacy">${ICON_SHIELD}<span>Processed entirely in your browser. Nothing is uploaded.</span></p>
             </div>
 
             <div class="fourk-recording" data-view="recording" hidden>
-              <div class="fourk-recording-visual">
-                <div class="fourk-recording-ring"><span data-role="recording-percent">0%</span></div>
-                <div><strong data-role="recording-heading">Creating video clip</strong><p>Keep this tab open while processing.</p></div>
+              <div class="fourk-target-card">
+                <span class="fourk-target-icon">${ICON_MOVIE}</span>
+                <div class="fourk-target-body">
+                  <div class="fourk-target-head"><span>Target selection</span><span data-role="target-duration">30s</span></div>
+                  <div class="fourk-target-range" data-role="target-range">0:00 → 0:30</div>
+                  <div class="fourk-target-meta" data-role="target-meta"></div>
+                </div>
               </div>
-              <div class="fourk-progress"><i data-role="progress-bar"></i></div>
-              <div class="fourk-progress-meta"><span data-role="progress-time">0:00 / 0:30</span><span>Processing</span></div>
+
+              <div class="fourk-process-card">
+                <div class="fourk-ring-wrap">
+                  <svg class="fourk-ring" viewBox="0 0 108 108" aria-hidden="true">
+                    <circle class="fourk-ring-track" cx="54" cy="54" r="46" fill="none" stroke="currentColor" stroke-width="9"></circle>
+                    <circle class="fourk-ring-progress" data-role="progress-ring" cx="54" cy="54" r="46" fill="none" stroke="currentColor" stroke-width="9" stroke-dasharray="289.03" stroke-dashoffset="289.03"></circle>
+                  </svg>
+                  <div class="fourk-ring-label">
+                    <span class="fourk-ring-percent" data-role="recording-percent">0</span>
+                    <span class="fourk-ring-status"><i></i>Encoding</span>
+                  </div>
+                </div>
+                <strong class="fourk-process-heading" data-role="recording-heading">Creating video clip</strong>
+                <p class="fourk-process-desc">Keep this tab visible until it finishes.</p>
+                <div class="fourk-progress"><i data-role="progress-bar"></i></div>
+                <div class="fourk-progress-meta"><span data-role="progress-time">0:00 / 0:30</span><span>Processing</span></div>
+              </div>
+
               <button class="fourk-secondary fourk-danger" type="button" data-action="cancel">Cancel</button>
             </div>
 
             <div class="fourk-result" data-view="result" hidden>
               <div class="fourk-success-badge">
-                <strong data-role="result-heading">Clip ready</strong>
-                <small data-role="result-description">Your file is ready.</small>
+                <span class="fourk-badge-icon" aria-hidden="true">✓</span>
+                <div class="fourk-success-badge-text">
+                  <strong data-role="result-heading">Clip ready</strong>
+                  <small data-role="result-description">Your file is ready.</small>
+                </div>
               </div>
               <div class="fourk-preview-wrap">
                 <video data-role="preview-video" controls playsinline></video>
-                <audio data-role="preview-audio" controls></audio>
                 <img data-role="preview-image" alt="Captured frame">
-                <span class="fourk-preview-label">Preview</span>
               </div>
               <div class="fourk-file-info">
-                <strong data-role="file-name">youtube-clip.mp4</strong>
-                <small data-role="file-meta">MP4</small>
+                <span class="fourk-file-icon">${ICON_FILE}</span>
+                <div class="fourk-file-text">
+                  <strong data-role="file-name">youtube-clip.mp4</strong>
+                  <small data-role="file-meta">MP4</small>
+                </div>
               </div>
-              <button class="fourk-primary" type="button" data-action="download"><span data-role="download-label">Download video</span></button>
-              <button class="fourk-secondary" type="button" data-action="copy-image" hidden><span data-role="copy-image-label">Copy image</span></button>
-              <button class="fourk-secondary" type="button" data-action="reset"><span data-role="reset-label">Create another clip</span></button>
+              <button class="fourk-primary" type="button" data-action="download">${ICON_DOWNLOAD}<span data-role="download-label">Download video</span><span class="fourk-button-trailing" data-role="download-size"></span></button>
+              <button class="fourk-secondary" type="button" data-action="copy-image" hidden>${ICON_COPY}<span data-role="copy-image-label">Copy image</span></button>
+
+              <div class="fourk-export" data-role="export-section" hidden>
+                <button class="fourk-secondary" type="button" data-action="download-audio" data-role="download-audio-btn" hidden>
+                  ${ICON_HEADPHONES}<span>Download audio</span><span class="fourk-export-meta" data-role="audio-meta"></span>
+                </button>
+
+                <button class="fourk-secondary fourk-accordion-toggle" type="button" data-action="toggle-subtitles" aria-expanded="false">
+                  ${ICON_SUBTITLES}<span class="fourk-accordion-label">Subtitles</span><span class="fourk-accordion-chevron">${ICON_CHEVRON}</span>
+                </button>
+
+                <div class="fourk-sub-panel" data-role="sub-export-panel" hidden>
+                  <div class="fourk-section-label"><span class="fourk-section-label-left"><span>Cue list</span></span><span class="fourk-duration-badge" data-role="sub-count">None</span></div>
+
+                  <label class="fourk-sub-field">
+                    <span class="fourk-field-label">Language</span>
+                    <div class="fourk-select-wrap">
+                      <select data-select="sub-track" aria-label="Choose subtitle language"><option value="">Subtitles load automatically</option></select>
+                      <span class="fourk-select-chevron">${ICON_CHEVRON}</span>
+                    </div>
+                  </label>
+
+                  <span class="fourk-field-label">Format</span>
+                  <div class="fourk-segment fourk-segment-grid">
+                    <button type="button" data-sub-format="txt" class="fourk-segment-btn is-active" aria-pressed="true">TXT</button>
+                    <button type="button" data-sub-format="srt" class="fourk-segment-btn" aria-pressed="false">SRT</button>
+                    <button type="button" data-sub-format="vtt" class="fourk-segment-btn" aria-pressed="false">VTT</button>
+                    <button type="button" data-sub-format="json" class="fourk-segment-btn" aria-pressed="false">JSON</button>
+                  </div>
+
+                  <label class="fourk-sub-field" data-role="sub-time-style-field">
+                    <span class="fourk-field-label">TXT timestamp format</span>
+                    <div class="fourk-select-wrap">
+                      <select data-select="sub-time-style" aria-label="Timestamp style">
+                        <option value="clock">00:01:23.450 (hours:minutes:seconds.ms)</option>
+                        <option value="short">01:23 (minutes:seconds)</option>
+                        <option value="seconds">83.45 (decimal seconds)</option>
+                      </select>
+                      <span class="fourk-select-chevron">${ICON_CHEVRON}</span>
+                    </div>
+                  </label>
+
+                  <button class="fourk-secondary" type="button" data-action="load-subtitles"><span>Load subtitles</span></button>
+
+                  <div class="fourk-sub-preview" data-role="sub-preview" hidden></div>
+
+                  <div class="fourk-sub-actions" data-role="sub-actions" hidden>
+                    <button class="fourk-secondary" type="button" data-action="copy-subtitles">${ICON_COPY}<span data-role="copy-sub-label">Copy</span></button>
+                    <button class="fourk-primary" type="button" data-action="download-subtitles">${ICON_DOWNLOAD}<span>Download</span></button>
+                  </div>
+                </div>
+              </div>
+
+              <button class="fourk-secondary fourk-ghost" type="button" data-action="reset">${ICON_ARROW_BACK}<span data-role="reset-label">Create another clip</span></button>
             </div>
           </div>
         </section>
@@ -258,10 +341,18 @@
     `);
 
     document.documentElement.appendChild(state.root);
+    const versionBadge = query('[data-role="version-badge"]');
+    if (versionBadge) {
+      try {
+        versionBadge.textContent = `v${chrome.runtime.getManifest().version}`;
+      } catch (_) {
+        versionBadge.hidden = true;
+      }
+    }
     setView("form");
     bindEvents();
+    setupFrameFormatOptions();
     refreshVideoInfo(true);
-    scheduleAutoSubtitles();
   }
 
   function query(selector) {
@@ -304,7 +395,6 @@
 
     query(".fourk-video-title").textContent = title;
     query('[data-role="video-duration"]').textContent = duration ? formatTime(duration) : "--:--";
-    query('[data-role="timeline-end"]').textContent = duration ? formatTime(duration) : "--:--";
 
     if (resetSelection && duration) {
       const start = clamp(Math.floor(state.video.currentTime || 0), 0, Math.max(0, duration - 1));
@@ -347,17 +437,15 @@
   function updateSelectionUI() {
     if (!state.root || !state.video) return;
     const selection = readSelection();
-    const videoDuration = Number.isFinite(state.video.duration) ? state.video.duration : 0;
     const valid = Number.isFinite(selection.start) && Number.isFinite(selection.end) && selection.end > selection.start;
-    query('[data-role="selection-duration"]').textContent = valid ? formatDurationLabel(selection.duration) : "Invalid";
+    const durationLabel = query('[data-role="selection-duration"]');
+    durationLabel.textContent = valid ? formatDurationLabel(selection.duration) : "Invalid";
+    durationLabel.classList.toggle("is-valid", valid);
+    durationLabel.classList.toggle("is-invalid", !valid);
 
-    const startPercent = videoDuration ? clamp((selection.start / videoDuration) * 100, 0, 100) : 0;
-    const endPercent = videoDuration ? clamp((selection.end / videoDuration) * 100, 0, 100) : 0;
-    const selectionBar = query(".fourk-timeline-selection");
-    selectionBar.style.left = `${startPercent}%`;
-    selectionBar.style.width = `${Math.max(0, endPercent - startPercent)}%`;
-    query(".fourk-handle-start").style.left = `${startPercent}%`;
-    query(".fourk-handle-end").style.left = `${endPercent}%`;
+    if (valid && state.subCues.length) {
+      renderSubtitlePreview(getSelectedSubtitleCues());
+    }
   }
 
   function formatDurationLabel(seconds) {
@@ -389,36 +477,26 @@
     const max = Number.isFinite(state.video?.duration) ? state.video.duration : safeStart + seconds;
     query('[data-input="end"]').value = formatTime(Math.min(safeStart + seconds, max));
     state.root.querySelectorAll("[data-duration]").forEach((button) => {
-      button.classList.toggle("is-active", Number(button.dataset.duration) === seconds);
+      const active = Number(button.dataset.duration) === seconds;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", String(active));
     });
     clearMessage();
     updateSelectionUI();
   }
 
   function switchTool(mode) {
-    if (!['video', 'audio', 'frame', 'sub'].includes(mode) || state.recording) return;
+    if (!['video', 'frame'].includes(mode) || state.recording) return;
     state.mode = mode;
     state.root.querySelectorAll("[data-tool]").forEach((button) => {
       const active = button.dataset.tool === mode;
       button.classList.toggle("is-active", active);
       button.setAttribute("aria-selected", String(active));
     });
-    query('[data-mode-panel="range"]').hidden = mode === "frame" || mode === "sub";
-    query('[data-mode-panel="frame"]').hidden = mode !== "frame";
-    query('[data-mode-panel="sub"]').hidden = mode !== "sub";
-
-    if (mode === "video" || mode === "audio") {
-      query('[data-role="range-heading"]').textContent = mode === "audio"
-        ? "Audio range"
-        : "Video range";
-      const createLabel = mode === "audio" ? "Create audio clip" : "Create video clip";
-      query('[data-role="create-label"]').textContent = createLabel;
-    }
+    state.root.querySelectorAll("[data-mode-panel]").forEach((panel) => {
+      panel.hidden = panel.dataset.modePanel !== mode;
+    });
     clearMessage();
-
-    if (mode === "sub" && !state.subCues.length && !state.subLoading && !state.subNoTracks) {
-      loadSubtitles();
-    }
   }
 
   function sleep(ms) {
@@ -464,45 +542,77 @@
     });
   }
 
-  async function captureFrameBlob(video) {
-    const directCanvas = document.createElement("canvas");
-    directCanvas.width = video.videoWidth;
-    directCanvas.height = video.videoHeight;
-    if (directCanvas.width && directCanvas.height) {
+  // Shared with create-clip: both capture off the decoded playback stream
+  // rather than anything screen/tab-dependent, so neither one cares whether
+  // this tab is the visible/focused one.
+  function getPlaybackStream(video) {
+    const capture = video.captureStream || video.mozCaptureStream;
+    if (typeof capture !== "function") {
+      throw new Error("Chrome isn't allowing capture of this video stream. Update your browser and try again.");
+    }
+    const stream = capture.call(video);
+    if (!stream?.getVideoTracks().length) {
+      throw new Error("YouTube didn't provide a video stream to capture — this video may be copy-protected.");
+    }
+    return stream;
+  }
+
+  // Reads one still frame off a live video track. Prefers ImageCapture
+  // (no intermediate <video> element needed); falls back to a hidden,
+  // muted proxy <video> for browsers where ImageCapture can't grab from a
+  // captureStream()-sourced track.
+  async function grabFrameFromStream(stream) {
+    const [track] = stream.getVideoTracks();
+    if (!track) throw new Error("Couldn't read a video frame from the player.");
+
+    if (typeof ImageCapture === "function") {
       try {
-        directCanvas.getContext("2d").drawImage(video, 0, 0, directCanvas.width, directCanvas.height);
-        return await canvasToBlob(directCanvas);
+        return await new ImageCapture(track).grabFrame();
       } catch (_) {
+        // Fall through to the proxy-video path below.
       }
     }
 
-    const rect = video.getBoundingClientRect();
-    const visibleLeft = clamp(rect.left, 0, window.innerWidth);
-    const visibleTop = clamp(rect.top, 0, window.innerHeight);
-    const visibleRight = clamp(rect.right, 0, window.innerWidth);
-    const visibleBottom = clamp(rect.bottom, 0, window.innerHeight);
-    if (visibleRight - visibleLeft < 80 || visibleBottom - visibleTop < 45) {
-      throw new Error("The video player is off-screen. Scroll to the video and try again.");
-    }
+    const proxyVideo = document.createElement("video");
+    proxyVideo.muted = true;
+    proxyVideo.playsInline = true;
+    proxyVideo.srcObject = stream;
+    await new Promise((resolve, reject) => {
+      const timeout = window.setTimeout(() => reject(new Error("Timed out waiting for a video frame.")), 4000);
+      proxyVideo.onloadeddata = () => {
+        window.clearTimeout(timeout);
+        resolve();
+      };
+      proxyVideo.onerror = () => {
+        window.clearTimeout(timeout);
+        reject(new Error("Couldn't read a video frame from the player."));
+      };
+      proxyVideo.play().catch(() => {});
+    });
+    return proxyVideo;
+  }
 
-    state.root.style.visibility = "hidden";
+  async function captureFrameBlob(video) {
+    const meta = FRAME_FORMAT_META[state.frameFormat] || FRAME_FORMAT_META.png;
+    const quality = meta.mime === "image/png" ? undefined : 0.92;
+
+    const stream = getPlaybackStream(video);
     try {
-      await new Promise((resolve) => window.setTimeout(resolve, 120));
-      const response = await sendRuntimeMessage({ type: "FOURK_CAPTURE_VISIBLE_TAB" });
-      const screenshot = await loadImage(response.dataUrl);
-      const scaleX = screenshot.naturalWidth / window.innerWidth;
-      const scaleY = screenshot.naturalHeight / window.innerHeight;
-      const sx = Math.round(visibleLeft * scaleX);
-      const sy = Math.round(visibleTop * scaleY);
-      const sw = Math.round((visibleRight - visibleLeft) * scaleX);
-      const sh = Math.round((visibleBottom - visibleTop) * scaleY);
+      const source = await grabFrameFromStream(stream);
+      const width = source.videoWidth || source.width;
+      const height = source.videoHeight || source.height;
+      if (!width || !height) {
+        throw new Error("Couldn't read this video's frame — it may be copy-protected.");
+      }
+
       const canvas = document.createElement("canvas");
-      canvas.width = sw;
-      canvas.height = sh;
-      canvas.getContext("2d").drawImage(screenshot, sx, sy, sw, sh, 0, 0, sw, sh);
-      return await canvasToBlob(canvas);
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext("2d").drawImage(source, 0, 0, width, height);
+      if (typeof source.close === "function") source.close(); // ImageBitmap cleanup
+      return await canvasToBlob(canvas, meta.mime, quality);
     } finally {
-      state.root.style.visibility = "";
+      stream.getTracks().forEach((track) => track.stop());
     }
   }
 
@@ -538,6 +648,7 @@
       releaseClipUrl();
       state.clipBlob = blob;
       state.clipUrl = URL.createObjectURL(blob);
+      state.clipFrameFormat = state.frameFormat;
       state.clipFileName = makeFileName(frameTime, frameTime, "frame");
       state.outputKind = "frame";
       state.previousPlayback = null;
@@ -550,6 +661,43 @@
       button.disabled = false;
       button.innerHTML = previousContent;
     }
+  }
+
+  function canvasSupportsMime(mime) {
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = 1;
+      canvas.height = 1;
+      return canvas.toDataURL(mime).indexOf(`data:${mime}`) === 0;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function setupFrameFormatOptions() {
+    const buttons = state.root.querySelectorAll("[data-frame-format]");
+    let firstSupported = "";
+    buttons.forEach((button) => {
+      const format = button.dataset.frameFormat;
+      const meta = FRAME_FORMAT_META[format];
+      const supported = format === "png" || canvasSupportsMime(meta.mime);
+      button.hidden = !supported;
+      button.disabled = !supported;
+      if (supported && !firstSupported) firstSupported = format;
+    });
+    applyFrameFormat(firstSupported || "png");
+  }
+
+  function applyFrameFormat(format) {
+    if (!FRAME_FORMAT_META[format]) return;
+    const target = state.root.querySelector(`[data-frame-format="${format}"]`);
+    if (target?.disabled) return;
+    state.frameFormat = format;
+    state.root.querySelectorAll("[data-frame-format]").forEach((button) => {
+      const active = button.dataset.frameFormat === format;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
   }
 
   function testThumbnailUrl(url) {
@@ -1063,40 +1211,41 @@
     list.appendChild(fragment);
 
     const count = query('[data-role="sub-count"]');
-    if (!cues.length) {
+    const selection = state.lastClipSelection;
+    const hasRange = !!selection && Number.isFinite(selection.start) && Number.isFinite(selection.end) && selection.end > selection.start;
+    if (!state.subCues.length) {
       count.textContent = "None";
+    } else if (!cues.length) {
+      count.textContent = hasRange ? "No lines in this range" : "None";
+    } else if (hasRange) {
+      count.textContent = `${cues.length} lines · ${formatTime(selection.start)}–${formatTime(selection.end)}`;
     } else {
-      const duration = Number.isFinite(state.video?.duration) ? state.video.duration : 0;
-      const last = cues[cues.length - 1];
-      const covered = Math.max(last.end || 0, last.start || 0);
-      if (!duration) {
-        count.textContent = `${cues.length} lines`;
-      } else if (covered >= duration * 0.95) {
-        count.textContent = `${cues.length} lines · full video ${formatTime(duration)}`;
-      } else {
-        count.textContent = `${cues.length} lines · up to ${formatTime(covered)} / ${formatTime(duration)}`;
-      }
+      count.textContent = `${cues.length} lines`;
     }
     query('[data-role="sub-actions"]').hidden = cues.length === 0;
+  }
+
+  function getSelectedSubtitleCues() {
+    const selection = state.lastClipSelection;
+    if (!selection || !Number.isFinite(selection.start) || !Number.isFinite(selection.end) || selection.end <= selection.start) {
+      return state.subCues;
+    }
+    return filterCues(state.subCues, selection.start, selection.end);
   }
 
   function buildSubtitleOutput() {
     const meta = FORMAT_META[state.subFormat] || FORMAT_META.txt;
     return {
-      text: renderCues(state.subCues, state.subFormat, { timeStyle: state.subTimeStyle }),
+      text: renderCues(getSelectedSubtitleCues(), state.subFormat, { timeStyle: state.subTimeStyle }),
       extension: meta.extension,
       mime: meta.mime
     };
   }
 
   function resetSubtitles() {
-    window.clearTimeout(state.subAutoTimer);
-    state.subAutoTimer = null;
     state.subTracks = [];
     state.subCues = [];
     state.subVideoId = "";
-    state.subAutoVideoId = "";
-    state.subAutoTries = 0;
     state.subNoTracks = false;
 
     const select = query('[data-select="sub-track"]');
@@ -1117,7 +1266,12 @@
     const actions = query('[data-role="sub-actions"]');
     if (actions) actions.hidden = true;
     const count = query('[data-role="sub-count"]');
-    if (count) count.textContent = "Waiting";
+    if (count) count.textContent = "None";
+
+    const panel = query('[data-role="sub-export-panel"]');
+    if (panel) panel.hidden = true;
+    const toggle = query('[data-action="toggle-subtitles"]');
+    if (toggle) toggle.setAttribute("aria-expanded", "false");
   }
 
   async function loadSubtitles({ silent = false } = {}) {
@@ -1150,7 +1304,7 @@
 
       const cues = await fetchCaptionCues(track);
       state.subCues = cues;
-      renderSubtitlePreview(cues);
+      renderSubtitlePreview(getSelectedSubtitleCues());
       if (!silent) showMessage(`Loaded ${cues.length} subtitle lines (${track.label}).`, "success");
       return true;
     } catch (error) {
@@ -1167,30 +1321,19 @@
     }
   }
 
-  function scheduleAutoSubtitles(delay = AUTO_SUBTITLE_DELAY_MS) {
-    window.clearTimeout(state.subAutoTimer);
-    state.subAutoTimer = window.setTimeout(autoLoadSubtitles, delay);
-  }
+  function toggleSubtitlesPanel() {
+    const panel = query('[data-role="sub-export-panel"]');
+    const toggle = query('[data-action="toggle-subtitles"]');
+    if (!panel || !toggle) return;
+    const willOpen = panel.hidden;
+    panel.hidden = !willOpen;
+    toggle.setAttribute("aria-expanded", String(willOpen));
+    if (!willOpen) return;
 
-  async function autoLoadSubtitles() {
-    state.subAutoTimer = null;
-    if (state.recording || state.subLoading) return;
-    if (!state.root || state.root.hidden || !isWatchPage()) return;
-
-    const videoId = getVideoId();
-    if (!videoId) return;
-    if (videoId !== state.subAutoVideoId) {
-      state.subAutoVideoId = videoId;
-      state.subAutoTries = 0;
-    }
-    if (videoId === state.subVideoId && state.subCues.length) return;
-    if (state.subNoTracks) return;
-    if (state.subAutoTries >= AUTO_SUBTITLE_MAX_TRIES) return;
-    state.subAutoTries += 1;
-
-    const ok = await loadSubtitles({ silent: true });
-    if (!ok && state.subAutoTries < AUTO_SUBTITLE_MAX_TRIES && getVideoId() === videoId) {
-      scheduleAutoSubtitles(AUTO_SUBTITLE_RETRY_DELAY_MS);
+    if (state.subTracks.length) {
+      renderSubtitlePreview(getSelectedSubtitleCues());
+    } else if (!state.subLoading) {
+      loadSubtitles();
     }
   }
 
@@ -1238,16 +1381,18 @@
     if (!FORMAT_META[format]) return;
     state.subFormat = format;
     state.root.querySelectorAll("[data-sub-format]").forEach((button) => {
-      button.classList.toggle("is-active", button.dataset.subFormat === format);
+      const active = button.dataset.subFormat === format;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", String(active));
     });
     query('[data-role="sub-time-style-field"]').hidden = format !== "txt";
-    if (state.subCues.length) renderSubtitlePreview(state.subCues);
+    if (state.subCues.length) renderSubtitlePreview(getSelectedSubtitleCues());
   }
 
   function applySubtitleTimeStyle(style) {
     if (!["clock", "short", "seconds"].includes(style)) return;
     state.subTimeStyle = style;
-    if (state.subCues.length) renderSubtitlePreview(state.subCues);
+    if (state.subCues.length) renderSubtitlePreview(getSelectedSubtitleCues());
   }
 
   function getSupportedMp4MimeType() {
@@ -1293,25 +1438,38 @@
     });
   }
 
+  // Purely cosmetic: keeps the ring/progress bar smooth while the tab is
+  // visible. Driven by rVFC (or the setInterval fallback below), both of
+  // which can lag or pause while the tab is hidden — harmless here, since
+  // nobody's watching the ring then. `checkRecordingEnd` (below), driven by
+  // `timeupdate`, is what actually stops the recording on time.
   function updateRecordingProgress(start, end) {
     if (!state.recording || !state.video) return;
     const elapsed = clamp(state.video.currentTime - start, 0, end - start);
     const percent = clamp((elapsed / (end - start)) * 100, 0, 100);
-    query('[data-role="recording-percent"]').textContent = `${Math.round(percent)}%`;
+    query('[data-role="recording-percent"]').textContent = String(Math.round(percent));
     query('[data-role="progress-bar"]').style.width = `${percent}%`;
     query('[data-role="progress-time"]').textContent = `${formatPreciseTime(elapsed)} / ${formatTime(end - start)}`;
-
-    if (state.video.currentTime >= end - 0.035 || state.video.ended) {
-      stopRecording(false);
-      return;
-    }
+    const ring = query('[data-role="progress-ring"]');
+    if (ring) ring.style.strokeDashoffset = String(RECORDING_RING_CIRCUMFERENCE * (1 - percent / 100));
 
     if (typeof state.video.requestVideoFrameCallback === "function") {
       state.frameRequest = state.video.requestVideoFrameCallback(() => updateRecordingProgress(start, end));
     }
   }
 
-  function prepareRecording(kind, selection) {
+  // Authoritative stop check, tied to the media clock via `timeupdate` —
+  // this event keeps firing on the playing <video> even when the tab is
+  // hidden and rendering-driven signals like rVFC/rAF are throttled, so the
+  // clip still stops on time whether or not the tab is in front.
+  function checkRecordingEnd(start, end) {
+    if (!state.recording || !state.video) return;
+    if (state.video.currentTime >= end - 0.035 || state.video.ended) {
+      stopRecording(false);
+    }
+  }
+
+  function prepareRecording(selection) {
     state.previousPlayback = {
       time: state.video.currentTime,
       paused: state.video.paused,
@@ -1319,10 +1477,20 @@
     };
     state.cancelling = false;
     state.recording = true;
-    query('[data-role="recording-heading"]').textContent = kind === "audio" ? "Creating audio clip" : "Creating video clip";
-    query('[data-role="recording-percent"]').textContent = "0%";
+    query('[data-role="recording-heading"]').textContent = "Creating video clip";
+    query('[data-role="recording-percent"]').textContent = "0";
     query('[data-role="progress-bar"]').style.width = "0%";
     query('[data-role="progress-time"]').textContent = `0:00 / ${formatTime(selection.duration)}`;
+    const ring = query('[data-role="progress-ring"]');
+    if (ring) ring.style.strokeDashoffset = String(RECORDING_RING_CIRCUMFERENCE);
+
+    query('[data-role="target-range"]').textContent = `${formatTime(selection.start)} → ${formatTime(selection.end)}`;
+    query('[data-role="target-duration"]').textContent = formatDurationLabel(selection.duration);
+    const width = state.video?.videoWidth;
+    const height = state.video?.videoHeight;
+    query('[data-role="target-meta"]').textContent = width && height ? `MP4 · ${width}×${height}` : "MP4";
+
+    state.activeSelection = selection;
     setView("recording");
   }
 
@@ -1335,6 +1503,13 @@
     };
     state.video.addEventListener("pause", state.playbackGuard);
     state.video.addEventListener("ratechange", state.playbackGuard);
+
+    state.timeUpdateHandler = () => checkRecordingEnd(selection.start, selection.end);
+    state.video.addEventListener("timeupdate", state.timeUpdateHandler);
+
+    // Backstop only: catches the rare case where `timeupdate` itself stalls
+    // (e.g. the video buffering). A late fire here just means a slightly
+    // overlong clip, never a clip that fails to stop.
     state.stopTimer = window.setTimeout(() => stopRecording(false), (selection.duration + 10) * 1000);
     updateRecordingProgress(selection.start, selection.end);
 
@@ -1359,10 +1534,10 @@
       : { extension: "webm", mime: "audio/webm", label: "WEBM" };
   }
 
-  async function createAudioClip(selection, capture) {
-    const mimeType = getSupportedAudioMimeType();
+  async function startMediaRecording(selection) {
+    const mimeType = getSupportedMp4MimeType();
     if (!mimeType) {
-      throw new Error("This Chrome build doesn't support exporting audio directly. Update Chrome to the latest version.");
+      throw new Error("This Chrome build doesn't support exporting MP4 directly. Update Chrome to the latest version.");
     }
 
     state.video.pause();
@@ -1373,29 +1548,52 @@
       return;
     }
 
-    state.captureStream = capture.call(state.video);
-    const audioTracks = state.captureStream?.getAudioTracks();
-    if (!audioTracks?.length) {
-      throw new Error("YouTube didn't provide an audio stream for this video.");
-    }
-    const audioOnlyStream = new MediaStream(audioTracks);
+    const rawStream = getPlaybackStream(state.video);
+    state.captureStream = rawStream;
 
-    const chunks = [];
-    state.recorder = new MediaRecorder(audioOnlyStream, {
+    // Primary output: the full video (with audio) — this is the one thing that must succeed.
+    const videoChunks = [];
+    state.videoRecorder = new MediaRecorder(rawStream, {
       mimeType,
+      videoBitsPerSecond: 5_000_000,
       audioBitsPerSecond: 192_000
     });
-
-    state.recorder.addEventListener("dataavailable", (event) => {
-      if (event.data?.size) chunks.push(event.data);
+    state.videoRecorder.addEventListener("dataavailable", (event) => {
+      if (event.data?.size) videoChunks.push(event.data);
+    });
+    const videoFinished = new Promise((resolve, reject) => {
+      state.videoRecorder.addEventListener("stop", resolve, { once: true });
+      state.videoRecorder.addEventListener("error", () => reject(new Error("An error occurred while creating the MP4 file.")), { once: true });
     });
 
-    const finished = new Promise((resolve, reject) => {
-      state.recorder.addEventListener("stop", resolve, { once: true });
-      state.recorder.addEventListener("error", () => reject(new Error("An error occurred while creating the audio file.")), { once: true });
-    });
+    // Bonus output: audio-only, captured in parallel from the same stream during the
+    // same single playback pass. Best-effort — never fails the video clip.
+    const audioMimeType = getSupportedAudioMimeType();
+    const audioTracks = rawStream.getAudioTracks();
+    const audioChunks = [];
+    let audioFinished = Promise.resolve();
+    state.audioRecorder = null;
 
-    state.recorder.start(500);
+    if (audioMimeType && audioTracks.length) {
+      try {
+        state.audioRecorder = new MediaRecorder(new MediaStream(audioTracks), {
+          mimeType: audioMimeType,
+          audioBitsPerSecond: 192_000
+        });
+        state.audioRecorder.addEventListener("dataavailable", (event) => {
+          if (event.data?.size) audioChunks.push(event.data);
+        });
+        audioFinished = new Promise((resolve) => {
+          state.audioRecorder.addEventListener("stop", resolve, { once: true });
+          state.audioRecorder.addEventListener("error", () => resolve(), { once: true });
+        });
+      } catch (_) {
+        state.audioRecorder = null;
+      }
+    }
+
+    state.videoRecorder.start(500);
+    if (state.audioRecorder) state.audioRecorder.start(500);
     await state.video.play();
     if (state.cancelling) {
       restoreAfterCancel();
@@ -1403,26 +1601,42 @@
     }
     startPlaybackTracking(selection);
 
-    await finished;
+    await videoFinished;
+    await audioFinished;
 
     if (state.cancelling) {
       restoreAfterCancel();
       return;
     }
 
-    const meta = audioFileMeta(state.recorder.mimeType || mimeType);
-    const blob = new Blob(chunks, { type: meta.mime });
-    if (blob.size < 512) {
-      throw new Error("The generated audio file has no data.");
+    const outputMime = state.videoRecorder.mimeType || mimeType;
+    if (!outputMime.toLowerCase().startsWith("video/mp4")) {
+      throw new Error("Chrome couldn't produce a valid MP4 file on this device.");
+    }
+    const blob = new Blob(videoChunks, { type: "video/mp4" });
+    if (blob.size < 1024) {
+      throw new Error("The generated file has no data. YouTube may be restricting recording for this video.");
     }
 
     releaseClipUrl();
     state.clipBlob = blob;
     state.clipUrl = URL.createObjectURL(blob);
-    state.outputKind = "audio";
-    state.clipAudioExtension = meta.extension;
-    state.clipFileName = makeFileName(selection.start, selection.end, "audio");
-    showResult(selection, "audio");
+    state.outputKind = "video";
+    state.clipFileName = makeFileName(selection.start, selection.end, "video");
+    state.lastClipSelection = selection;
+
+    if (state.audioRecorder && audioChunks.length) {
+      const meta = audioFileMeta(state.audioRecorder.mimeType || audioMimeType);
+      const audioBlob = new Blob(audioChunks, { type: meta.mime });
+      if (audioBlob.size >= 512) {
+        state.audioBlob = audioBlob;
+        state.audioUrl = URL.createObjectURL(audioBlob);
+        state.audioExtension = meta.extension;
+        state.audioFileName = makeFileName(selection.start, selection.end, "audio");
+      }
+    }
+
+    showResult(selection, "video");
   }
 
   async function createClip() {
@@ -1446,91 +1660,20 @@
       showMessage("Chrome isn't allowing capture of this video stream. Update your browser and try again.");
       return;
     }
-
-    const kind = state.mode === "audio" ? "audio" : "video";
     if (typeof MediaRecorder === "undefined") {
       showMessage("This browser doesn't support recording. Use a newer version of Chrome.");
       return;
     }
-    const mimeType = kind === "video" ? getSupportedMp4MimeType() : "";
-    if (kind === "video" && !mimeType) {
-      showMessage("This Chrome build doesn't support exporting MP4 directly. Update Chrome to the latest version.");
-      return;
-    }
 
-    prepareRecording(kind, selection);
+    prepareRecording(selection);
 
     try {
-      if (kind === "audio") {
-        await createAudioClip(selection, capture);
-        return;
-      }
-
-      state.video.pause();
-      state.video.playbackRate = 1;
-      await waitForSeek(state.video, selection.start);
-      if (state.cancelling) {
-        restoreAfterCancel();
-        return;
-      }
-
-      state.captureStream = capture.call(state.video);
-      const selectedTracks = state.captureStream?.getTracks();
-      if (!selectedTracks?.length || state.captureStream.getVideoTracks().length === 0) {
-        throw new Error("YouTube didn't provide a video stream to clip.");
-      }
-
-      const chunks = [];
-      state.recorder = new MediaRecorder(state.captureStream, {
-        mimeType,
-        videoBitsPerSecond: 5_000_000,
-        audioBitsPerSecond: 192_000
-      });
-
-      state.recorder.addEventListener("dataavailable", (event) => {
-        if (event.data?.size) chunks.push(event.data);
-      });
-
-      const finished = new Promise((resolve, reject) => {
-        state.recorder.addEventListener("stop", resolve, { once: true });
-        state.recorder.addEventListener("error", () => reject(new Error("An error occurred while creating the MP4 file.")), { once: true });
-      });
-
-      state.recorder.start(500);
-      await state.video.play();
-      if (state.cancelling) {
-        restoreAfterCancel();
-        return;
-      }
-      startPlaybackTracking(selection);
-
-      await finished;
-
-      if (state.cancelling) {
-        restoreAfterCancel();
-        return;
-      }
-
-      const outputType = state.recorder.mimeType || mimeType;
-      if (!outputType.toLowerCase().startsWith("video/mp4")) {
-        throw new Error("Chrome couldn't produce a valid MP4 file on this device.");
-      }
-      const blob = new Blob(chunks, { type: "video/mp4" });
-      if (blob.size < 1024) {
-        throw new Error("The generated file has no data. YouTube may be restricting recording for this video.");
-      }
-
-      releaseClipUrl();
-      state.clipBlob = blob;
-      state.clipUrl = URL.createObjectURL(blob);
-      state.outputKind = kind;
-      state.clipFileName = makeFileName(selection.start, selection.end, kind);
-      showResult(selection, kind);
+      await startMediaRecording(selection);
     } catch (error) {
       console.error("[4K]", error);
       cleanupRecording();
       setView("form");
-      showMessage(error?.message || `Couldn't create the ${kind} clip. Try playing the video and doing it again.`);
+      showMessage(error?.message || "Couldn't create the video clip. Try playing the video and doing it again.");
       restoreOriginalPlayback();
     }
   }
@@ -1539,8 +1682,11 @@
     if (!state.recording) return;
     state.cancelling = cancelled;
     state.recording = false;
-    if (state.recorder && state.recorder.state !== "inactive") {
-      state.recorder.stop();
+    if (state.videoRecorder && state.videoRecorder.state !== "inactive") {
+      state.videoRecorder.stop();
+    }
+    if (state.audioRecorder && state.audioRecorder.state !== "inactive") {
+      state.audioRecorder.stop();
     }
     state.video?.pause();
     clearRecordingTimers();
@@ -1569,17 +1715,25 @@
       state.video.removeEventListener("ratechange", state.playbackGuard);
     }
     state.playbackGuard = null;
-    if (state.recorder && state.recorder.state !== "inactive") {
-      try {
-        state.recorder.stop();
-      } catch (_) {
-      }
+    if (state.timeUpdateHandler && state.video) {
+      state.video.removeEventListener("timeupdate", state.timeUpdateHandler);
     }
+    state.timeUpdateHandler = null;
+    state.activeSelection = null;
+    [state.videoRecorder, state.audioRecorder].forEach((recorder) => {
+      if (recorder && recorder.state !== "inactive") {
+        try {
+          recorder.stop();
+        } catch (_) {
+        }
+      }
+    });
     if (state.captureStream) {
       state.captureStream.getTracks().forEach((track) => track.stop());
     }
     state.captureStream = null;
-    state.recorder = null;
+    state.videoRecorder = null;
+    state.audioRecorder = null;
   }
 
   function restoreOriginalPlayback() {
@@ -1595,7 +1749,7 @@
     cleanupRecording();
     restoreOriginalPlayback();
     setView("form");
-    showMessage(`Cancelled the ${state.mode === "audio" ? "audio" : "video"} clip. You can choose a new time range.`, "success");
+    showMessage("Cancelled the video clip. You can choose a new time range.", "success");
   }
 
   function showResult(selection, kind) {
@@ -1608,30 +1762,41 @@
     state.previousPlayback = null;
 
     const videoPreview = query('[data-role="preview-video"]');
-    const audioPreview = query('[data-role="preview-audio"]');
     const imagePreview = query('[data-role="preview-image"]');
     videoPreview.hidden = kind !== "video";
-    audioPreview.hidden = kind !== "audio";
     imagePreview.hidden = kind !== "frame";
     if (kind === "video") videoPreview.src = state.clipUrl;
-    if (kind === "audio") audioPreview.src = state.clipUrl;
     if (kind === "frame") imagePreview.src = state.clipUrl;
 
-    const audioLabel = (state.clipAudioExtension || "webm").toUpperCase();
+    const frameLabel = (FRAME_FORMAT_META[state.clipFrameFormat] || FRAME_FORMAT_META.png).label;
     const labels = {
-      video: { format: "MP4 VIDEO", heading: "Video ready", description: "Your file is ready.", download: "Download video", reset: "Create another clip" },
-      audio: { format: `${audioLabel} AUDIO`, heading: "Audio ready", description: "Your file is ready.", download: "Download audio", reset: "Create another clip" },
-      frame: { format: "PNG", heading: "Frame ready", description: "Your image is ready.", download: "Download image", reset: "Capture another frame" }
+      video: { format: "MP4 VIDEO", heading: "Clip ready", description: "Your file is ready.", download: "Download video", reset: "Create another clip" },
+      frame: { format: frameLabel, heading: "Frame ready", description: "Your image is ready.", download: "Download image", reset: "Capture another frame" }
     }[kind];
     query('[data-role="file-name"]').textContent = state.clipFileName;
     query('[data-role="file-meta"]').textContent = kind === "frame"
       ? `${labels.format} · ${formatBytes(state.clipBlob.size)} · ${formatTime(selection.start)}`
       : `${labels.format} · ${formatBytes(state.clipBlob.size)} · ${formatTime(selection.duration)}`;
     query('[data-role="download-label"]').textContent = labels.download;
+    query('[data-role="download-size"]').textContent = formatBytes(state.clipBlob.size);
     query('[data-action="copy-image"]').hidden = kind !== "frame";
     query('[data-role="reset-label"]').textContent = labels.reset;
     query('[data-role="result-heading"]').textContent = labels.heading;
     query('[data-role="result-description"]').textContent = labels.description;
+
+    const exportSection = query('[data-role="export-section"]');
+    exportSection.hidden = kind !== "video";
+    if (kind === "video") {
+      const downloadAudioBtn = query('[data-role="download-audio-btn"]');
+      downloadAudioBtn.hidden = !state.audioBlob;
+      query('[data-role="audio-meta"]').textContent = (state.audioExtension || "").toUpperCase();
+
+      const subPanel = query('[data-role="sub-export-panel"]');
+      const subToggle = query('[data-action="toggle-subtitles"]');
+      subPanel.hidden = true;
+      subToggle.setAttribute("aria-expanded", "false");
+    }
+
     setView("result");
   }
 
@@ -1648,10 +1813,13 @@
   function makeFileName(start, end, kind) {
     const safeTitle = getSafeVideoTitle();
     const startLabel = formatTime(start, true).replaceAll(":", "-");
-    if (kind === "frame") return `${safeTitle} [frame-${startLabel}].png`;
+    if (kind === "frame") {
+      const meta = FRAME_FORMAT_META[state.clipFrameFormat] || FRAME_FORMAT_META.png;
+      return `${safeTitle} [frame-${startLabel}].${meta.extension}`;
+    }
     const endLabel = formatTime(end, true).replaceAll(":", "-");
     const suffix = kind === "audio" ? "audio" : "video";
-    const extension = kind === "audio" ? (state.clipAudioExtension || "webm") : "mp4";
+    const extension = kind === "audio" ? (state.audioExtension || "webm") : "mp4";
     return `${safeTitle} [${suffix}-${startLabel}-${endLabel}].${extension}`;
   }
 
@@ -1671,21 +1839,39 @@
     anchor.remove();
   }
 
+  function downloadAudioOutput() {
+    if (!state.audioUrl || !state.audioBlob) return;
+    const anchor = document.createElement("a");
+    anchor.href = state.audioUrl;
+    anchor.download = state.audioFileName;
+    anchor.rel = "noopener";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  }
+
+  function releaseAudioUrl() {
+    if (state.audioUrl) URL.revokeObjectURL(state.audioUrl);
+    state.audioUrl = null;
+    state.audioBlob = null;
+    state.audioFileName = "";
+    state.audioExtension = "";
+  }
+
   function releaseClipUrl() {
     const videoPreview = query('[data-role="preview-video"]');
-    const audioPreview = query('[data-role="preview-audio"]');
     const imagePreview = query('[data-role="preview-image"]');
-    [videoPreview, audioPreview].forEach((preview) => {
-      if (!preview) return;
-      preview.pause();
-      preview.removeAttribute("src");
-      preview.load();
-    });
+    if (videoPreview) {
+      videoPreview.pause();
+      videoPreview.removeAttribute("src");
+      videoPreview.load();
+    }
     if (imagePreview) imagePreview.removeAttribute("src");
     if (state.clipUrl) URL.revokeObjectURL(state.clipUrl);
     state.clipUrl = null;
     state.clipBlob = null;
     state.outputKind = null;
+    releaseAudioUrl();
   }
 
   function resetResult() {
@@ -1773,7 +1959,14 @@
         return;
       }
 
+      if (button.dataset.frameFormat) {
+        applyFrameFormat(button.dataset.frameFormat);
+        return;
+      }
+
       if (button.dataset.seek) {
+        state.root.querySelectorAll(".fourk-sub-row.is-active").forEach((row) => row.classList.remove("is-active"));
+        button.classList.add("is-active");
         seekVideoTo(Number(button.dataset.seek));
         return;
       }
@@ -1789,8 +1982,10 @@
       if (action === "get-title") copyVideoTitle();
       if (action === "cancel") stopRecording(true);
       if (action === "download") downloadClip();
+      if (action === "download-audio") downloadAudioOutput();
       if (action === "copy-image") copyCapturedImage();
       if (action === "reset") resetResult();
+      if (action === "toggle-subtitles") toggleSubtitlesPanel();
       if (action === "load-subtitles") loadSubtitles();
       if (action === "copy-subtitles") copySubtitles();
       if (action === "download-subtitles") downloadSubtitles();
@@ -1809,7 +2004,10 @@
       bindTimeInputMask(input);
       input.addEventListener("input", () => {
         clearMessage();
-        state.root.querySelectorAll("[data-duration]").forEach((button) => button.classList.remove("is-active"));
+        state.root.querySelectorAll("[data-duration]").forEach((button) => {
+          button.classList.remove("is-active");
+          button.setAttribute("aria-pressed", "false");
+        });
         updateSelectionUI();
       });
       input.addEventListener("blur", () => {
@@ -1830,7 +2028,11 @@
     });
     video.addEventListener("timeupdate", () => {
       if (!state.recording && video === state.video && state.root?.isConnected) {
-        query('[data-role="current-time"]').textContent = formatTime(video.currentTime);
+        const label = formatTime(video.currentTime);
+        query('[data-role="current-time"]').textContent = label;
+        state.root.querySelectorAll(".fourk-live-hint").forEach((node) => {
+          node.textContent = label;
+        });
       }
     });
   }
@@ -1849,7 +2051,6 @@
           setView("form");
           clearMessage();
           refreshVideoInfo(true);
-          scheduleAutoSubtitles();
         } else {
           mount();
         }
@@ -1872,6 +2073,11 @@
   window.addEventListener("beforeunload", () => {
     if (state.recording) stopRecording(true);
     releaseClipUrl();
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && state.recording && state.activeSelection) {
+      updateRecordingProgress(state.activeSelection.start, state.activeSelection.end);
+    }
   });
   window.setInterval(handleNavigation, 1000);
   mount();
