@@ -23,6 +23,8 @@
   --fourk-danger: #dc2626;
   --fourk-danger-strong: #b91c1c;
   --fourk-danger-wash: #fef2f2;
+  --fourk-warning: #d97706;
+  --fourk-warning-wash: #fffbeb;
   --fourk-radius-panel: 16px;
   --fourk-radius-card: 12px;
   --fourk-radius-control: 8px;
@@ -73,6 +75,7 @@
    ========================================= */
 
 #fourk-root .fourk-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -206,7 +209,7 @@
 }
 
 #fourk-root .fourk-range-section {
-  padding-bottom: var(--fourk-space-lg);
+  padding-bottom: var(--fourk-space-md);
   margin-bottom: var(--fourk-space-lg);
   border-bottom: 1px solid var(--fourk-border);
 }
@@ -346,6 +349,10 @@
   color: var(--fourk-accent-strong);
   background: var(--fourk-bg);
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+}
+
+#fourk-root .fourk-form {
+  padding-bottom: var(--fourk-space-lg);
 }
 
 #fourk-root .fourk-panels {
@@ -537,7 +544,6 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--fourk-space-lg);
 }
 
 #fourk-root .fourk-inline-row > span {
@@ -595,7 +601,7 @@
   display: flex;
   align-items: flex-start;
   gap: var(--fourk-space-sm);
-  margin-bottom: var(--fourk-space-lg);
+  margin: var(--fourk-space-lg) 0;
   padding: var(--fourk-space-md);
   border: 1px solid var(--fourk-border);
   border-radius: var(--fourk-radius-card);
@@ -640,21 +646,29 @@
 }
 
 /* =========================================
-   Messages
+   Messages — floating toast, anchored to the card so it stays
+   visible regardless of scroll position or which view is active.
+   Auto-dismisses on a timer (see MESSAGE_AUTO_DISMISS_MS in JS).
    ========================================= */
 
 #fourk-root .fourk-message {
+  position: absolute;
+  left: var(--fourk-space-lg);
+  right: var(--fourk-space-lg);
+  top: 66px;
+  z-index: 30;
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  margin: var(--fourk-space-md) 0;
   padding: 10px 12px;
   border: 1px solid var(--fourk-danger-wash);
   border-radius: var(--fourk-radius-control);
   color: var(--fourk-danger-strong);
   background: var(--fourk-danger-wash);
+  box-shadow: 0 10px 20px -6px rgba(15, 23, 42, 0.25), 0 4px 8px -4px rgba(15, 23, 42, 0.12);
   font-size: 12px;
   font-weight: 650;
+  animation: fourk-toast-in 180ms ease;
 }
 
 #fourk-root .fourk-message::before {
@@ -671,6 +685,34 @@
   font-size: 11px;
   font-weight: 800;
   line-height: 1;
+}
+
+#fourk-root .fourk-message-text {
+  flex: 1;
+  min-width: 0;
+  padding-top: 1px;
+}
+
+#fourk-root .fourk-message-close {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  color: inherit;
+  background: transparent;
+  opacity: 0.6;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#fourk-root .fourk-message-close:hover {
+  opacity: 1;
+  background: rgba(15, 23, 42, 0.08);
 }
 
 #fourk-root .fourk-message[data-type="success"] {
@@ -806,79 +848,6 @@
   padding: var(--fourk-space-lg);
 }
 
-#fourk-root .fourk-target-card {
-  display: flex;
-  align-items: center;
-  gap: var(--fourk-space-md);
-  margin-bottom: var(--fourk-space-md);
-  padding: var(--fourk-space-md);
-  border: 1px solid var(--fourk-border);
-  border-radius: var(--fourk-radius-card);
-  background: var(--fourk-bg-sunken);
-}
-
-#fourk-root .fourk-target-icon {
-  display: flex;
-  flex: 0 0 40px;
-  width: 40px;
-  height: 40px;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--fourk-radius-control);
-  color: var(--fourk-accent-strong);
-  background: var(--fourk-accent-wash);
-}
-
-#fourk-root .fourk-target-icon svg {
-  width: 19px;
-  height: 19px;
-}
-
-#fourk-root .fourk-target-body {
-  flex: 1;
-  min-width: 0;
-}
-
-#fourk-root .fourk-target-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  margin-bottom: 2px;
-  color: var(--fourk-accent-strong);
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-#fourk-root .fourk-target-head span:last-child {
-  color: var(--fourk-muted);
-  font-weight: 650;
-  text-transform: none;
-  letter-spacing: 0;
-  font-variant-numeric: tabular-nums;
-}
-
-#fourk-root .fourk-target-range {
-  overflow: hidden;
-  color: var(--fourk-text);
-  font-size: 13px;
-  font-weight: 650;
-  font-variant-numeric: tabular-nums;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-#fourk-root .fourk-target-meta {
-  overflow: hidden;
-  margin-top: 1px;
-  color: var(--fourk-muted);
-  font-size: 11px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 #fourk-root .fourk-process-card {
   display: flex;
   flex-direction: column;
@@ -969,10 +938,34 @@
   font-weight: 700;
 }
 
-#fourk-root .fourk-process-desc {
-  margin: 0 0 var(--fourk-space-md);
-  color: var(--fourk-muted);
+#fourk-root .fourk-process-range {
+  margin: 0 0 2px;
+  color: var(--fourk-accent-strong);
   font-size: 12px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+#fourk-root .fourk-process-desc {
+  display: flex;
+  width: 100%;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 5px;
+  margin: 0 0 var(--fourk-space-md);
+  color: var(--fourk-warning);
+  font-size: 11.5px;
+  font-weight: 650;
+  line-height: 1.4;
+  text-align: left;
+}
+
+#fourk-root .fourk-process-desc svg {
+  flex: 0 0 13px;
+  width: 13px;
+  height: 13px;
+  margin-top: 1px;
+  color: var(--fourk-warning);
 }
 
 #fourk-root .fourk-progress {
@@ -1239,6 +1232,11 @@
 #fourk-root .fourk-sub-preview {
   margin: var(--fourk-space-sm) 0 0;
   padding: 4px;
+  max-height: 260px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--fourk-border-strong) transparent;
   border: 1px solid var(--fourk-border);
   border-radius: var(--fourk-radius-card);
   background: var(--fourk-bg);
@@ -1320,6 +1318,11 @@
 @keyframes fourk-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
+}
+
+@keyframes fourk-toast-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* =========================================

@@ -40,10 +40,13 @@
   const ICON_CHEVRON = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5.5 8 10 12.3 14.5 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   const ICON_ARROW_BACK = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M12.3 5.2 7 10.4l5.3 5.2M7.5 10.4H16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   const ICON_FILE = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M6 3.5h5.4l3.1 3.1V16a1 1 0 0 1-1 1h-7.5a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M11.3 3.6v3.1h3.1" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+  const ICON_WARNING = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 3.4 17.3 15.9a1 1 0 0 1-.87 1.5H3.57a1 1 0 0 1-.87-1.5L10 3.4Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 8.2v3.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="10" cy="14.1" r="0.95" fill="currentColor"/></svg>`;
   const capturedCaptionUrls = [];
   const bridgeRequests = new Map();
   let bridgeRequestId = 0;
   let innerTubeSession = null;
+  let messageDismissTimer = null;
+  const MESSAGE_AUTO_DISMISS_MS = 5000;
 
   const state = {
     root: null,
@@ -71,8 +74,6 @@
     progressInterval: null,
     frameRequest: null,
     playbackGuard: null,
-    timeUpdateHandler: null,
-    activeSelection: null,
     boundVideos: new WeakSet(),
     subTracks: [],
     subCues: [],
@@ -130,6 +131,11 @@
               ${ICON_CLOSE}
             </button>
           </header>
+
+          <div class="fourk-message" data-role="message" role="status" aria-live="polite" hidden>
+            <span class="fourk-message-text" data-role="message-text"></span>
+            <button type="button" class="fourk-message-close" data-action="dismiss-message" aria-label="Dismiss">×</button>
+          </div>
 
           <div class="fourk-scroll-area">
             <div class="fourk-video-summary">
@@ -201,7 +207,7 @@
 
                   <div class="fourk-notice">
                     ${ICON_INFO}
-                    <p><strong>Note:</strong> clips can run up to 15 minutes. Creating one plays it back once in this tab, so it takes as long as the clip itself.</p>
+                    <p><strong>Note:</strong> clips can run up to 15 minutes. Creating one plays it back once in this tab, so it takes as long as the clip itself — avoid seeking or pausing the video while it plays.</p>
                   </div>
                 </div>
 
@@ -226,20 +232,10 @@
                 </div>
               </div>
 
-              <div class="fourk-message" data-role="message" hidden></div>
               <p class="fourk-privacy">${ICON_SHIELD}<span>Processed entirely in your browser. Nothing is uploaded.</span></p>
             </div>
 
             <div class="fourk-recording" data-view="recording" hidden>
-              <div class="fourk-target-card">
-                <span class="fourk-target-icon">${ICON_MOVIE}</span>
-                <div class="fourk-target-body">
-                  <div class="fourk-target-head"><span>Target selection</span><span data-role="target-duration">30s</span></div>
-                  <div class="fourk-target-range" data-role="target-range">0:00 → 0:30</div>
-                  <div class="fourk-target-meta" data-role="target-meta"></div>
-                </div>
-              </div>
-
               <div class="fourk-process-card">
                 <div class="fourk-ring-wrap">
                   <svg class="fourk-ring" viewBox="0 0 108 108" aria-hidden="true">
@@ -252,7 +248,8 @@
                   </div>
                 </div>
                 <strong class="fourk-process-heading" data-role="recording-heading">Creating video clip</strong>
-                <p class="fourk-process-desc">Keep this tab visible until it finishes.</p>
+                <p class="fourk-process-range" data-role="recording-range">0:00 → 0:30</p>
+                <p class="fourk-process-desc">${ICON_WARNING}<span>Don't seek or pause the video — the clip captures whatever plays on screen in real time.</span></p>
                 <div class="fourk-progress"><i data-role="progress-bar"></i></div>
                 <div class="fourk-progress-meta"><span data-role="progress-time">0:00 / 0:30</span><span>Processing</span></div>
               </div>
@@ -367,9 +364,20 @@
 
   function showMessage(text, type = "error") {
     const message = query('[data-role="message"]');
-    message.textContent = text;
+    const textEl = query('[data-role="message-text"]');
+    if (messageDismissTimer) {
+      window.clearTimeout(messageDismissTimer);
+      messageDismissTimer = null;
+    }
+    textEl.textContent = text;
     message.dataset.type = type;
     message.hidden = !text;
+    if (text) {
+      messageDismissTimer = window.setTimeout(() => {
+        messageDismissTimer = null;
+        message.hidden = true;
+      }, MESSAGE_AUTO_DISMISS_MS);
+    }
   }
 
   function clearMessage() {
@@ -542,77 +550,48 @@
     });
   }
 
-  // Shared with create-clip: both capture off the decoded playback stream
-  // rather than anything screen/tab-dependent, so neither one cares whether
-  // this tab is the visible/focused one.
-  function getPlaybackStream(video) {
-    const capture = video.captureStream || video.mozCaptureStream;
-    if (typeof capture !== "function") {
-      throw new Error("Chrome isn't allowing capture of this video stream. Update your browser and try again.");
-    }
-    const stream = capture.call(video);
-    if (!stream?.getVideoTracks().length) {
-      throw new Error("YouTube didn't provide a video stream to capture — this video may be copy-protected.");
-    }
-    return stream;
-  }
-
-  // Reads one still frame off a live video track. Prefers ImageCapture
-  // (no intermediate <video> element needed); falls back to a hidden,
-  // muted proxy <video> for browsers where ImageCapture can't grab from a
-  // captureStream()-sourced track.
-  async function grabFrameFromStream(stream) {
-    const [track] = stream.getVideoTracks();
-    if (!track) throw new Error("Couldn't read a video frame from the player.");
-
-    if (typeof ImageCapture === "function") {
-      try {
-        return await new ImageCapture(track).grabFrame();
-      } catch (_) {
-        // Fall through to the proxy-video path below.
-      }
-    }
-
-    const proxyVideo = document.createElement("video");
-    proxyVideo.muted = true;
-    proxyVideo.playsInline = true;
-    proxyVideo.srcObject = stream;
-    await new Promise((resolve, reject) => {
-      const timeout = window.setTimeout(() => reject(new Error("Timed out waiting for a video frame.")), 4000);
-      proxyVideo.onloadeddata = () => {
-        window.clearTimeout(timeout);
-        resolve();
-      };
-      proxyVideo.onerror = () => {
-        window.clearTimeout(timeout);
-        reject(new Error("Couldn't read a video frame from the player."));
-      };
-      proxyVideo.play().catch(() => {});
-    });
-    return proxyVideo;
-  }
-
   async function captureFrameBlob(video) {
     const meta = FRAME_FORMAT_META[state.frameFormat] || FRAME_FORMAT_META.png;
     const quality = meta.mime === "image/png" ? undefined : 0.92;
 
-    const stream = getPlaybackStream(video);
-    try {
-      const source = await grabFrameFromStream(stream);
-      const width = source.videoWidth || source.width;
-      const height = source.videoHeight || source.height;
-      if (!width || !height) {
-        throw new Error("Couldn't read this video's frame — it may be copy-protected.");
+    const directCanvas = document.createElement("canvas");
+    directCanvas.width = video.videoWidth;
+    directCanvas.height = video.videoHeight;
+    if (directCanvas.width && directCanvas.height) {
+      try {
+        directCanvas.getContext("2d").drawImage(video, 0, 0, directCanvas.width, directCanvas.height);
+        return await canvasToBlob(directCanvas, meta.mime, quality);
+      } catch (_) {
       }
+    }
 
+    const rect = video.getBoundingClientRect();
+    const visibleLeft = clamp(rect.left, 0, window.innerWidth);
+    const visibleTop = clamp(rect.top, 0, window.innerHeight);
+    const visibleRight = clamp(rect.right, 0, window.innerWidth);
+    const visibleBottom = clamp(rect.bottom, 0, window.innerHeight);
+    if (visibleRight - visibleLeft < 80 || visibleBottom - visibleTop < 45) {
+      throw new Error("The video player is off-screen. Scroll to the video and try again.");
+    }
+
+    state.root.style.visibility = "hidden";
+    try {
+      await new Promise((resolve) => window.setTimeout(resolve, 120));
+      const response = await sendRuntimeMessage({ type: "FOURK_CAPTURE_VISIBLE_TAB" });
+      const screenshot = await loadImage(response.dataUrl);
+      const scaleX = screenshot.naturalWidth / window.innerWidth;
+      const scaleY = screenshot.naturalHeight / window.innerHeight;
+      const sx = Math.round(visibleLeft * scaleX);
+      const sy = Math.round(visibleTop * scaleY);
+      const sw = Math.round((visibleRight - visibleLeft) * scaleX);
+      const sh = Math.round((visibleBottom - visibleTop) * scaleY);
       const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      canvas.getContext("2d").drawImage(source, 0, 0, width, height);
-      if (typeof source.close === "function") source.close(); // ImageBitmap cleanup
+      canvas.width = sw;
+      canvas.height = sh;
+      canvas.getContext("2d").drawImage(screenshot, sx, sy, sw, sh, 0, 0, sw, sh);
       return await canvasToBlob(canvas, meta.mime, quality);
     } finally {
-      stream.getTracks().forEach((track) => track.stop());
+      state.root.style.visibility = "";
     }
   }
 
@@ -1438,11 +1417,6 @@
     });
   }
 
-  // Purely cosmetic: keeps the ring/progress bar smooth while the tab is
-  // visible. Driven by rVFC (or the setInterval fallback below), both of
-  // which can lag or pause while the tab is hidden — harmless here, since
-  // nobody's watching the ring then. `checkRecordingEnd` (below), driven by
-  // `timeupdate`, is what actually stops the recording on time.
   function updateRecordingProgress(start, end) {
     if (!state.recording || !state.video) return;
     const elapsed = clamp(state.video.currentTime - start, 0, end - start);
@@ -1453,19 +1427,13 @@
     const ring = query('[data-role="progress-ring"]');
     if (ring) ring.style.strokeDashoffset = String(RECORDING_RING_CIRCUMFERENCE * (1 - percent / 100));
 
-    if (typeof state.video.requestVideoFrameCallback === "function") {
-      state.frameRequest = state.video.requestVideoFrameCallback(() => updateRecordingProgress(start, end));
-    }
-  }
-
-  // Authoritative stop check, tied to the media clock via `timeupdate` —
-  // this event keeps firing on the playing <video> even when the tab is
-  // hidden and rendering-driven signals like rVFC/rAF are throttled, so the
-  // clip still stops on time whether or not the tab is in front.
-  function checkRecordingEnd(start, end) {
-    if (!state.recording || !state.video) return;
     if (state.video.currentTime >= end - 0.035 || state.video.ended) {
       stopRecording(false);
+      return;
+    }
+
+    if (typeof state.video.requestVideoFrameCallback === "function") {
+      state.frameRequest = state.video.requestVideoFrameCallback(() => updateRecordingProgress(start, end));
     }
   }
 
@@ -1478,19 +1446,13 @@
     state.cancelling = false;
     state.recording = true;
     query('[data-role="recording-heading"]').textContent = "Creating video clip";
+    query('[data-role="recording-range"]').textContent = `${formatTime(selection.start)} → ${formatTime(selection.end)}`;
     query('[data-role="recording-percent"]').textContent = "0";
     query('[data-role="progress-bar"]').style.width = "0%";
     query('[data-role="progress-time"]').textContent = `0:00 / ${formatTime(selection.duration)}`;
     const ring = query('[data-role="progress-ring"]');
     if (ring) ring.style.strokeDashoffset = String(RECORDING_RING_CIRCUMFERENCE);
 
-    query('[data-role="target-range"]').textContent = `${formatTime(selection.start)} → ${formatTime(selection.end)}`;
-    query('[data-role="target-duration"]').textContent = formatDurationLabel(selection.duration);
-    const width = state.video?.videoWidth;
-    const height = state.video?.videoHeight;
-    query('[data-role="target-meta"]').textContent = width && height ? `MP4 · ${width}×${height}` : "MP4";
-
-    state.activeSelection = selection;
     setView("recording");
   }
 
@@ -1503,13 +1465,6 @@
     };
     state.video.addEventListener("pause", state.playbackGuard);
     state.video.addEventListener("ratechange", state.playbackGuard);
-
-    state.timeUpdateHandler = () => checkRecordingEnd(selection.start, selection.end);
-    state.video.addEventListener("timeupdate", state.timeUpdateHandler);
-
-    // Backstop only: catches the rare case where `timeupdate` itself stalls
-    // (e.g. the video buffering). A late fire here just means a slightly
-    // overlong clip, never a clip that fails to stop.
     state.stopTimer = window.setTimeout(() => stopRecording(false), (selection.duration + 10) * 1000);
     updateRecordingProgress(selection.start, selection.end);
 
@@ -1548,8 +1503,14 @@
       return;
     }
 
-    const rawStream = getPlaybackStream(state.video);
+    const capture = state.video.captureStream || state.video.mozCaptureStream;
+    const rawStream = capture.call(state.video);
     state.captureStream = rawStream;
+
+    const tracks = rawStream?.getTracks();
+    if (!tracks?.length || rawStream.getVideoTracks().length === 0) {
+      throw new Error("YouTube didn't provide a video stream to clip.");
+    }
 
     // Primary output: the full video (with audio) — this is the one thing that must succeed.
     const videoChunks = [];
@@ -1715,11 +1676,6 @@
       state.video.removeEventListener("ratechange", state.playbackGuard);
     }
     state.playbackGuard = null;
-    if (state.timeUpdateHandler && state.video) {
-      state.video.removeEventListener("timeupdate", state.timeUpdateHandler);
-    }
-    state.timeUpdateHandler = null;
-    state.activeSelection = null;
     [state.videoRecorder, state.audioRecorder].forEach((recorder) => {
       if (recorder && recorder.state !== "inactive") {
         try {
@@ -1973,6 +1929,7 @@
 
       const action = button.dataset.action;
       if (action === "collapse") setPanelOpen(false);
+      if (action === "dismiss-message") clearMessage();
       if (action === "set-start") setTimeFromCurrent("start");
       if (action === "set-end") setTimeFromCurrent("end");
       if (action === "set-frame") setTimeFromCurrent("frame");
@@ -2073,11 +2030,6 @@
   window.addEventListener("beforeunload", () => {
     if (state.recording) stopRecording(true);
     releaseClipUrl();
-  });
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden && state.recording && state.activeSelection) {
-      updateRecordingProgress(state.activeSelection.start, state.activeSelection.end);
-    }
   });
   window.setInterval(handleNavigation, 1000);
   mount();
